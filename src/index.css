@@ -1,0 +1,132 @@
+/* ============================================================
+   DESIGN SYSTEM — Apple Dark
+   ============================================================ */
+:root {
+  /* System font stack — SF Pro on Apple devices, Inter elsewhere */
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', system-ui, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Apple Dark Color System */
+  --bg:           #000000;
+  --bg-2:         #1C1C1E;
+  --bg-3:         #2C2C2E;
+  --bg-4:         #3A3A3C;
+
+  /* Separators */
+  --separator:         rgba(84, 84, 88, 0.65);
+  --separator-opaque:  #38383A;
+
+  /* Text — iOS opacity scale */
+  --text-1:       #FFFFFF;
+  --text-2:       rgba(235, 235, 245, 0.6);
+  --text-3:       rgba(235, 235, 245, 0.3);
+  --text-4:       rgba(235, 235, 245, 0.18);
+
+  /* System Blue accent */
+  --accent:       #0A84FF;
+  --accent-soft:  rgba(10, 132, 255, 0.12);
+
+  /* iOS Semantic Colors */
+  --green:        #30D158;
+  --green-soft:   rgba(48, 209, 88, 0.12);
+  --red:          #FF453A;
+  --red-soft:     rgba(255, 69, 58, 0.12);
+  --yellow:       #FFD60A;
+  --yellow-soft:  rgba(255, 214, 10, 0.12);
+  --orange:       #FF9F0A;
+  --orange-soft:  rgba(255, 159, 10, 0.12);
+  --blue:         #0A84FF;
+  --blue-soft:    rgba(10, 132, 255, 0.12);
+  --purple:       #BF5AF2;
+
+  /* Category colors */
+  --c-health:     #30D158;
+  --c-work:       #0A84FF;
+  --c-personal:   #BF5AF2;
+  --c-routine:    #FF9F0A;
+  --c-mental:     #FF6B81;
+
+  /* Spacing */
+  --safe-top:     env(safe-area-inset-top, 0px);
+  --safe-bottom:  env(safe-area-inset-bottom, 0px);
+  --nav-h:        52px;
+  --page-pad:     20px;
+
+  /* Radii — Apple-calibrated */
+  --radius-sm:    8px;
+  --radius-md:    13px;
+  --radius-lg:    18px;
+  --radius-xl:    22px;
+  --radius-full:  100px;
+}
+
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Form elements don't inherit font by default in browsers — force it */
+input, select, textarea, button {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text-1);
+  line-height: 1.5;
+  overscroll-behavior: none;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Hide scrollbar — PWA feel */
+::-webkit-scrollbar { width: 0; }
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.fade-up   { animation: fadeUp 0.3s ease both; }
+.fade-up-1 { animation-delay: 0.05s; }
+.fade-up-2 { animation-delay: 0.10s; }
+.fade-up-3 { animation-delay: 0.17s; }
+.fade-up-4 { animation-delay: 0.24s; }
+.fade-up-5 { animation-delay: 0.31s; }
+
+/* ============================================================
+   SKELETON LOADER
+   ============================================================ */
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-2) 25%, var(--bg-3) 50%, var(--bg-2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: var(--radius-md);
+}

@@ -1,0 +1,333 @@
+.tasks-page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ── Header ── */
+.tasks-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tasks-title {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.tasks-meta {
+  font-size: 0.8rem;
+  color: var(--text-3);
+  margin-top: 4px;
+  font-weight: 400;
+}
+
+.tasks-count {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ── Sort Button ── */
+.sort-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--bg-2);
+  border: none;
+  color: var(--text-2);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 7px 12px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.18s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sort-btn.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.sort-btn:active { opacity: 0.7; }
+
+/* ── Date Navigation ── */
+.date-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-2);
+  border-radius: var(--radius-lg);
+  padding: 4px 6px;
+}
+
+.date-nav-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--text-2);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.date-nav-btn:active { background: var(--bg-3); }
+
+.date-nav-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-2);
+  letter-spacing: 0.01em;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.date-nav-label:active { background: var(--bg-3); }
+
+.date-nav-label.is-today {
+  color: var(--accent);
+}
+
+/* ── Date Picker ── */
+.date-picker-wrap {
+  background: var(--bg-2);
+  border-radius: var(--radius-lg);
+  padding: 12px 14px;
+  display: flex;
+  justify-content: center;
+}
+
+.date-picker-input {
+  background: var(--bg-3);
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-1);
+  font-family: inherit;
+  width: 100%;
+  outline: none;
+  color-scheme: dark;
+}
+
+/* ── Progress Bar ── */
+.tasks-progress {
+  height: 3px;
+  background: var(--bg-3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.tasks-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ── Section Labels ── */
+.task-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.task-section-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-3);
+  padding-left: 2px;
+}
+
+/* ── Grouped Container — iOS List Style ── */
+.task-group {
+  background: var(--bg-2);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+/* ── Task Row ── */
+.task-card {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 13px 16px;
+  position: relative;
+  transition: background 0.12s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.task-card:active {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* Hairline separator */
+.task-card:not(.last)::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 52px;
+  right: 0;
+  height: 0.5px;
+  background: var(--separator);
+}
+
+.task-card.done {
+  opacity: 0.5;
+}
+
+/* ── Check Icon ── */
+.task-check {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+}
+
+.icon-done    { color: var(--green); }
+.icon-pending { color: var(--text-3); }
+
+/* ── Body ── */
+.task-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.task-name {
+  font-size: 0.93rem;
+  font-weight: 500;
+  color: var(--text-1);
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.task-card.done .task-name {
+  text-decoration: line-through;
+  color: var(--text-3);
+}
+
+/* ── Chips ── */
+.task-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+}
+
+.chip {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+/* Priority chips */
+.priority-chip.high   { background: var(--red-soft);    color: var(--red); }
+.priority-chip.medium { background: var(--yellow-soft);  color: var(--yellow); }
+.priority-chip.low    { background: var(--green-soft);   color: var(--green); }
+.priority-chip.none   { background: rgba(255,255,255,0.06); color: var(--text-3); }
+
+/* Category tag chips */
+.tag-chip {
+  background: var(--tag-bg, rgba(255,255,255,0.1));
+  color: var(--tag-color, var(--text-3));
+  text-transform: none;
+  font-weight: 600;
+  font-size: 0.7rem;
+  letter-spacing: 0.01em;
+}
+
+/* Effort chips */
+.effort-chip {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--effort-bg, rgba(255,255,255,0.07));
+  color: var(--effort-color, var(--text-3));
+  letter-spacing: 0.02em;
+}
+
+/* ── Points ── */
+.task-pts {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  min-width: 38px;
+  flex-shrink: 0;
+}
+
+.pts-badge {
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.pts-done    { color: var(--green); }
+.pts-pending { color: var(--text-3); }
+
+.pts-label {
+  font-size: 0.58rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+}
+
+/* ── Empty State ── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 72px 20px;
+  color: var(--text-3);
+  text-align: center;
+}
+
+.empty-state p {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.empty-state span {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  max-width: 220px;
+}
+
+/* ── Error ── */
+.error-msg {
+  color: var(--red);
+  font-size: 0.9rem;
+  padding: 24px;
+  text-align: center;
+}

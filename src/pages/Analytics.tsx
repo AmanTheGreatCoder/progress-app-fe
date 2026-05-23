@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { BarChart3 } from 'lucide-react';
-import './Analytics.css';
 
 const Analytics = () => {
   const [data, setData] = useState<{ goalStats: any[], avgCompletion: number } | null>(null);

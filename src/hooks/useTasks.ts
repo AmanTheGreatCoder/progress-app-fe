@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { Task } from '../utils/scoring';
+import { getLocalYMD } from '../utils/dateUtils';
 
 export const useTasks = () => {
   const [tasks, setTasks] = useState<any[]>([]);
@@ -37,7 +37,7 @@ export const useTasks = () => {
           name: p['Task Name']?.title[0]?.plain_text || 'Untitled',
           priority: p['Priority Level']?.select?.name || 'None',
           tags: p['Tag']?.multi_select?.map((s: any) => s.name) || [],
-          date: p.Date?.date?.start?.split('T')[0] || new Date().toISOString().split('T')[0],
+          date: p.Date?.date?.start?.split('T')[0] || getLocalYMD(),
           completed: p.Done?.checkbox === true,
           points: 0,
         };

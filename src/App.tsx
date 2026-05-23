@@ -4,7 +4,6 @@ import Dashboard from './pages/Dashboard';
 import Tasks from './pages/Tasks';
 import Goals from './pages/Goals';
 import Analytics from './pages/Analytics';
-import './App.css';
 
 function App() {
   return (

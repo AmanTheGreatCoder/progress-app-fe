@@ -1,13 +1,23 @@
-import { Outlet } from 'react-router-dom';
-import BottomNav from './BottomNav';
-import './Layout.css';
+import React from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
+import { BottomNav } from './BottomNav';
 
-const Layout = () => {
+const Layout: React.FC = () => {
+  const location = useLocation();
+
   return (
-    <div className="app-container">
-      <main className="main-content">
+    <div style={{
+      width: '100vw', height: '100vh',
+      display: 'flex', flexDirection: 'column',
+      position: 'relative',
+    }}>
+      <div key={location.pathname} style={{
+        flex: 1,
+        overflowY: 'auto',
+        overflowX: 'hidden',
+      }} className="screen-scroll fade-up">
         <Outlet />
-      </main>
+      </div>
       <BottomNav />
     </div>
   );

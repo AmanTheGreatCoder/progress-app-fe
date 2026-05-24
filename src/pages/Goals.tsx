@@ -183,7 +183,7 @@ const GoalDetail: React.FC<{
               style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text-primary)', marginBottom: 12, outline: 'none' }}
             />
             <div style={{ maxHeight: 200, overflowY: 'auto' }}>
-              {Array.from(new Set(tasks.filter(t => t.isRecurring).map(t => t.title)))
+              {Array.from(new Set(tasks.filter(t => t.isRecurring && !t.done).map(t => t.title)))
                 .filter(title => title.toLowerCase().includes(searchQuery.toLowerCase()))
                 .map(title => {
                   const isLinked = goal.linkedRecurringNames?.includes(title);

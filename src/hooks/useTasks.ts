@@ -31,6 +31,8 @@ export const useTasks = () => {
             isRecurring: item.isRecurring || false,
             repeatFlag: item.repeatFlag || '',
             ticktickProjectId: item.ticktickProjectId || '',
+            minVersion: item.minVersion || '',
+            completedMin: item.completedMin || false,
           };
         }
         // Notion raw shape (fallback)

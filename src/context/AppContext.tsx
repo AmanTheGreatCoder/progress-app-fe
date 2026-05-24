@@ -92,6 +92,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     isRecurring: t.isRecurring,
     repeatFlag: t.repeatFlag,
     points: t.points || 0,
+    minVersion: t.minVersion || '',
+    completedMin: t.completedMin || false,
   }));
 
   return (

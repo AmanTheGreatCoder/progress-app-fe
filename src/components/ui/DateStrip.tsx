@@ -69,13 +69,6 @@ export const DateStrip: React.FC<{
               color: active ? '#fff' : 'var(--text-primary)',
               lineHeight: 1,
             }}>{d.dayNum}</span>
-            {d.isToday && (
-              <div style={{
-                position: 'absolute', bottom: 5,
-                width: 4, height: 4, borderRadius: 2,
-                background: active ? 'rgba(255,255,255,0.9)' : 'var(--primary)'
-              }} />
-            )}
           </button>
         );
       })}

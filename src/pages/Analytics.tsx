@@ -125,7 +125,12 @@ const DayPointsCard = ({ dayInfo, dateMeta }: any) => {
 
 const CategoryBreakdown = ({ dayInfo }: any) => {
   const byCat: Record<string, number> = {};
-  dayInfo.items.forEach((it: any) => { byCat[it.category] = (byCat[it.category] || 0) + it.points; });
+  dayInfo.items.forEach((it: any) => { 
+    const pts = it.completedMin ? Math.round(it.points / 2) : it.done ? it.points : 0;
+    if (pts > 0) {
+      byCat[it.category] = (byCat[it.category] || 0) + pts; 
+    }
+  });
   const cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
   if (cats.length === 0) return null;
   const total = cats.reduce((s, [, p]) => s + p, 0);
@@ -248,39 +253,62 @@ const EarnedTasksList = ({ items, goals }: any) => {
       {items.map((it: any, i: number) => {
         const g = goals.find((g: any) => g.id === it.goalId);
         const cat = T.cat[it.category] || T.textSecondary;
+        const isDone = it.done || it.completedMin;
+        const pts = it.completedMin ? Math.round(it.points / 2) : it.done ? it.points : 0;
         return (
           <div key={i} style={{
             display: 'flex', alignItems: 'center', gap: 14,
             padding: '12px 16px',
             borderBottom: i === items.length - 1 ? 'none' : `1px solid ${T.border}`,
+            opacity: isDone ? 1 : 0.6,
           }}>
             <div style={{
-              width: 34, height: 34, borderRadius: 10,
-              background: `${cat}22`, color: cat,
+              width: 22, height: 22, borderRadius: 7, flexShrink: 0,
+              border: `2px solid ${!isDone ? T.border : it.completedMin ? T.warning : cat}`,
+              background: !isDone ? 'transparent' : it.completedMin ? `${T.warning}22` : cat,
               display: 'grid', placeItems: 'center',
-              fontSize: 16, flexShrink: 0,
-            }}>{g?.icon || '◆'}</div>
+            }}>
+              {isDone && !it.completedMin && (
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M2 6l3 3 5-5" stroke={T.bg} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
+              {it.completedMin && (
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                  <path d="M2 5l2.5 2.5 3.5-4" stroke={T.warning} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
+            </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{
-                color: T.textPrimary, fontSize: 14, fontWeight: 600,
+                color: isDone ? T.textPrimary : T.textSecondary, fontSize: 14, fontWeight: 600,
                 whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                textDecoration: isDone ? 'none' : 'none'
               }}>{it.title}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
-                <span style={{ width: 5, height: 5, borderRadius: 3, background: cat }} />
+                <span style={{ width: 5, height: 5, borderRadius: 3, background: isDone ? cat : T.textTertiary }} />
                 <span style={{ color: T.textSecondary, fontSize: 11.5 }}>{it.category}</span>
                 <span style={{ color: T.textTertiary, fontSize: 11.5 }}>·</span>
                 <span style={{ color: T.textSecondary, fontSize: 11.5 }}>{it.source}</span>
               </div>
             </div>
             <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4,
               fontSize: 12.5, fontWeight: 700,
-              color: T.textPrimary,
+              color: isDone ? (it.completedMin ? T.warning : T.textPrimary) : T.textSecondary,
               padding: '5px 10px', borderRadius: 999,
-              background: `${cat}1f`,
-              border: `1px solid ${cat}33`,
+              background: isDone ? (it.completedMin ? `${T.warning}1f` : `${cat}1f`) : T.surface2,
+              border: `1px solid ${isDone ? (it.completedMin ? `${T.warning}33` : `${cat}33`) : T.border}`,
               fontVariantNumeric: 'tabular-nums',
               flexShrink: 0,
-            }}>+{it.points}</div>
+            }}>
+              {it.completedMin && it.points > 0 && (
+                <span style={{ textDecoration: 'line-through', opacity: 0.4, fontSize: 11 }}>
+                  {it.points}
+                </span>
+              )}
+              {pts > 0 ? `+${pts}` : '0'}
+            </div>
           </div>
         );
       })}
@@ -311,7 +339,7 @@ const Analytics: React.FC = () => {
 
     if (d > todayDate()) return { total: 0, target, items: [], isFuture: true };
 
-    const items = dayTasks.filter(t => t.done).map(t => {
+    const items = dayTasks.map(t => {
       // Determine category
       const g = goals.find(goal => goal.id === t.goalId);
       let cat = g ? g.category : 'Other';
@@ -327,11 +355,15 @@ const Analytics: React.FC = () => {
         goalId: t.goalId,
         category: cat,
         source: t.source || 'TickTick',
-        points: t.points || 0
+        points: t.points || 0,
+        done: t.done,
+        completedMin: t.completedMin
       };
     });
 
-    return { total: items.reduce((s, x) => s + x.points, 0), target, items, isFuture: false };
+    const total = items.reduce((s, x) => s + (x.completedMin ? Math.round(x.points / 2) : x.done ? x.points : 0), 0);
+
+    return { total, target, items, isFuture: false };
   };
 
   const dayInfo = getDayPoints(selectedDate);
@@ -500,7 +532,7 @@ const Analytics: React.FC = () => {
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             }}>
               <h3 style={{ color: T.textPrimary, fontSize: 16, fontWeight: 700, margin: 0 }}>
-                Earned {heroLabel}
+                Tasks {heroLabel}
               </h3>
               <span style={{ color: T.textTertiary, fontSize: 12, fontWeight: 600 }}>
                 {dayInfo.items.length} task{dayInfo.items.length === 1 ? '' : 's'}

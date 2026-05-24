@@ -29,6 +29,7 @@ export const Icon: React.FC<IconProps> = ({ name, size = 22, color, stroke = 1.7
     case 'chevron-right': return (<svg {...props}><path d="M9 5l7 7-7 7"/></svg>);
     case 'chevron-down': return (<svg {...props}><path d="M5 9l7 7 7-7"/></svg>);
     case 'arrow-left': return (<svg {...props}><path d="M19 12H5M11 6l-6 6 6 6"/></svg>);
+    case 'arrow-down': return (<svg {...props}><path d="M12 5v14M6 13l6 6 6-6"/></svg>);
     case 'more': return (<svg {...props}><circle cx="6" cy="12" r="1.4" fill={c} stroke="none"/><circle cx="12" cy="12" r="1.4" fill={c} stroke="none"/><circle cx="18" cy="12" r="1.4" fill={c} stroke="none"/></svg>);
     case 'search': return (<svg {...props}><circle cx="11" cy="11" r="6.5"/><path d="m20 20-3.5-3.5"/></svg>);
     case 'filter': return (<svg {...props}><path d="M4 5h16M7 12h10M10 19h4"/></svg>);

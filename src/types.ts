@@ -34,4 +34,6 @@ export interface Task {
   isRecurring: boolean;
   repeatFlag: string;
   points: number;
+  minVersion: string;
+  completedMin: boolean;
 }

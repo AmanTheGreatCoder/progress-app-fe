@@ -32,8 +32,6 @@ const T = {
   } as Record<string, string>,
 };
 
-const POINTS_TARGET = 250;
-
 const fmtKey = (d: Date) => getLocalYMD(d);
 
 const dueToKey = (due: string) => {
@@ -83,13 +81,13 @@ const PointsRing = ({ pct, size = 104, stroke = 9, color, bg, children }: any) =
 };
 
 const DayPointsCard = ({ dayInfo, dateMeta }: any) => {
-  const target = POINTS_TARGET;
-  const pct = Math.min(100, (dayInfo.total / target) * 100);
+  const target = dayInfo.target > 0 ? dayInfo.target : 0;
+  const pct = target > 0 ? Math.min(100, (dayInfo.total / target) * 100) : 0;
   const heading = dateMeta.offset === 0 ? 'Today'
     : dateMeta.offset === 1 ? 'Tomorrow'
       : dateMeta.offset === -1 ? 'Yesterday'
         : `${dateMeta.dayName} ${dateMeta.dayNum}`;
-  const reached = dayInfo.total >= target;
+  const reached = target > 0 && dayInfo.total >= target;
   const accent = reached ? T.success : T.primary;
   return (
     <Card pad={20} style={{
@@ -109,6 +107,7 @@ const DayPointsCard = ({ dayInfo, dateMeta }: any) => {
           </div>
           <div style={{ color: T.textSecondary, fontSize: 12, marginTop: 8 }}>
             {dayInfo.isFuture ? "Hasn't happened yet"
+              : target === 0 ? 'No tasks for today'
               : reached ? 'Daily goal reached'
                 : `${target - dayInfo.total} pts to daily goal`}
           </div>
@@ -161,24 +160,10 @@ const CategoryBreakdown = ({ dayInfo }: any) => {
 };
 
 const WeekChart = ({ weekDays, selectedKey, onSelectDay }: any) => {
-  const target = POINTS_TARGET;
-  const maxPts = Math.max(target * 1.1, ...weekDays.map((d: any) => d.points));
-  const targetPct = (target / maxPts) * 100;
+  const maxPts = Math.max(10, ...weekDays.map((d: any) => d.points), ...weekDays.map((d: any) => d.target));
   return (
     <div>
       <div style={{ position: 'relative', height: 132, marginBottom: 10, paddingTop: 10 }}>
-        {/* dashed goal line */}
-        <div style={{
-          position: 'absolute', left: 0, right: 0,
-          bottom: `calc(${targetPct}% - 1px)`,
-          borderTop: `1px dashed ${T.textTertiary}`,
-          opacity: 0.6,
-        }} />
-        <span style={{
-          position: 'absolute', right: 0, top: 0,
-          color: T.textTertiary, fontSize: 9.5, fontWeight: 700,
-          letterSpacing: 0.5, textTransform: 'uppercase',
-        }}>Goal {target}</span>
         {/* bars */}
         <div style={{
           position: 'absolute', left: 0, right: 0, top: 10, bottom: 0,
@@ -187,8 +172,9 @@ const WeekChart = ({ weekDays, selectedKey, onSelectDay }: any) => {
         }}>
           {weekDays.map((d: any) => {
             const isSelected = d.key === selectedKey;
-            const reached = d.points >= target;
+            const reached = d.target > 0 && d.points >= d.target;
             const h = d.isFuture ? 3 : Math.max(3, (d.points / maxPts) * 100);
+            const targetH = d.target > 0 ? (d.target / maxPts) * 100 : 0;
             const color = d.isFuture ? T.surface2
               : reached ? T.success
                 : T.primary;
@@ -198,10 +184,21 @@ const WeekChart = ({ weekDays, selectedKey, onSelectDay }: any) => {
                 height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
                 position: 'relative',
               }}>
+                {/* target dash */}
+                {d.target > 0 && (
+                  <div style={{
+                    position: 'absolute', left: '15%', right: '15%',
+                    bottom: `calc(${targetH}% - 1px)`, height: 2,
+                    background: T.textSecondary,
+                    borderRadius: 1,
+                    zIndex: 2,
+                    opacity: 0.8
+                  }} />
+                )}
                 {/* hover value */}
                 {isSelected && !d.isFuture && (
                   <span style={{
-                    position: 'absolute', bottom: `calc(${h}% + 6px)`,
+                    position: 'absolute', bottom: `calc(${Math.max(h, targetH)}% + 6px)`,
                     left: '50%', transform: 'translateX(-50%)',
                     fontSize: 10.5, fontWeight: 700, color: T.textPrimary,
                     fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap',
@@ -304,12 +301,17 @@ const Analytics: React.FC = () => {
 
   const getDayPoints = (dateKey: string) => {
     const d = new Date(dateKey + 'T00:00:00');
-    if (d > todayDate()) return { total: 0, items: [], isFuture: true };
 
-    const items = tasks.filter(t => {
+    const dayTasks = tasks.filter(t => {
       const k = dueToKey(t.due) || t.due;
-      return k === dateKey && t.done;
-    }).map(t => {
+      return k === dateKey;
+    });
+
+    const target = dayTasks.reduce((s, t) => s + (t.points || 0), 0);
+
+    if (d > todayDate()) return { total: 0, target, items: [], isFuture: true };
+
+    const items = dayTasks.filter(t => t.done).map(t => {
       // Determine category
       const g = goals.find(goal => goal.id === t.goalId);
       let cat = g ? g.category : 'Other';
@@ -329,7 +331,7 @@ const Analytics: React.FC = () => {
       };
     });
 
-    return { total: items.reduce((s, x) => s + x.points, 0), items, isFuture: false };
+    return { total: items.reduce((s, x) => s + x.points, 0), target, items, isFuture: false };
   };
 
   const dayInfo = getDayPoints(selectedDate);
@@ -346,12 +348,13 @@ const Analytics: React.FC = () => {
       const d = addDays(startMonday, i);
       const k = fmtKey(d);
       const isFuture = d > tDate;
-      const info = isFuture ? { total: 0, items: [], isFuture: true } : getDayPoints(k);
+      const info = getDayPoints(k);
       arr.push({
         key: k,
         dayName: DAY_NAMES[d.getDay()],
         dayNum: d.getDate(),
         points: info.total,
+        target: info.target,
         isFuture,
         isToday: k === TODAY,
       });
@@ -368,7 +371,7 @@ const Analytics: React.FC = () => {
   const realDays = weekDays.filter(d => !d.isFuture);
   const weekTotal = realDays.reduce((s, d) => s + d.points, 0);
   const dailyAvg = realDays.length > 0 ? Math.round(weekTotal / realDays.length) : 0;
-  const daysHitGoal = realDays.filter(d => d.points >= POINTS_TARGET).length;
+  const daysHitGoal = realDays.filter(d => d.target > 0 && d.points >= d.target).length;
 
   const prevWeekTotal = useMemo(() => {
     const prevStart = addDays(startMonday, -7);

@@ -43,16 +43,34 @@ export const GoalRow: React.FC<GoalRowProps> = ({ goal, onClick }) => {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
             <Pill color={catColor} bg={`color-mix(in srgb, ${catColor} 12%, transparent)`} dot>{goal.category}</Pill>
             <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>
-              {goal.taskDone}/{goal.taskTotal} tasks · {days}d left
+              {goal.taskDone}/{goal.taskTotal} tasks
             </span>
           </div>
-          <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ flex: 1 }}>
-              <ProgressBar value={pct} color={catColor}/>
+          <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ flex: 1 }}>
+                <ProgressBar value={pct} color={catColor}/>
+              </div>
+              <span style={{
+                color: 'var(--text-primary)', fontSize: 13, fontWeight: 700, minWidth: 36, textAlign: 'right',
+              }}>{pct}%</span>
             </div>
-            <span style={{
-              color: 'var(--text-primary)', fontSize: 13, fontWeight: 700, minWidth: 36, textAlign: 'right',
-            }}>{pct}%</span>
+            
+            {(() => {
+              const daysTotal = Math.max(1, daysBetween(goal.start, goal.end) + 1);
+              const daysPassed = Math.max(0, daysBetween(goal.start, TODAY));
+              const deadlinePct = Math.min(100, Math.max(0, (daysPassed / daysTotal) * 100));
+              return (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ flex: 1 }}>
+                    <ProgressBar value={deadlinePct} color="var(--warning)" bg="var(--surface2)"/>
+                  </div>
+                  <span style={{
+                    color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600, minWidth: 36, textAlign: 'right',
+                  }}>{days}d left</span>
+                </div>
+              );
+            })()}
           </div>
         </div>
       </div>

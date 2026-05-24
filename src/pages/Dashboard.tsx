@@ -5,6 +5,7 @@ import { Card } from '../components/ui/Card';
 import { Icon } from '../components/ui/Icon';
 import { TaskRow } from '../components/ui/TaskRow';
 import { GoalRow, goalDaysLeft, goalPct } from '../components/ui/GoalRow';
+import { todayDate } from '../utils/dateUtils';
 
 const Dashboard: React.FC = () => {
   const { goals, tasks, toggleTask } = useAppContext();
@@ -29,7 +30,7 @@ const Dashboard: React.FC = () => {
       {/* Greeting + streak hero */}
       <div style={{ padding: '8px 20px 20px' }}>
         <div style={{ color: 'var(--text-secondary)', fontSize: 13, letterSpacing: 0.4, textTransform: 'uppercase' }}>
-          Saturday · May 23
+          {Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(todayDate())} · {Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(todayDate())}
         </div>
         <div style={{ color: 'var(--text-primary)', fontSize: 28, fontWeight: 700, marginTop: 4, letterSpacing: -0.4 }}>
           Morning, Alex

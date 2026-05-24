@@ -24,7 +24,7 @@ export const TaskRow: React.FC<TaskRowProps> = ({ task, goal, onToggle }) => {
         flexShrink: 0, transition: 'all 180ms',
         padding: 0,
       }}>
-        {task.done && <Icon name="check" size={14} color="var(--bg)" stroke={2.8}/>}
+        {task.done && <Icon name="check" size={14} color="var(--bg)" stroke={2.8} />}
       </button>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
@@ -33,36 +33,31 @@ export const TaskRow: React.FC<TaskRowProps> = ({ task, goal, onToggle }) => {
           textDecoration: task.done ? 'line-through' : 'none',
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
         }}>{task.title}</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-          <span style={{
-            display: 'inline-flex', alignItems: 'center', gap: 5,
-            color: catColor, fontSize: 11.5, fontWeight: 600,
-          }}>
-            <span style={{ width: 5, height: 5, borderRadius: 3, background: catColor }}/>
-            {goal?.title}
-          </span>
-          <span style={{ color: 'var(--text-tertiary)', fontSize: 11.5 }}>·</span>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 1, marginTop: 4 }}>
           <span style={{ color: 'var(--text-secondary)', fontSize: 11.5 }}>{task.due}</span>
-          {task.tags.map(tg => (
-            <span key={tg} style={{
-              fontSize: 10.5, color: 'var(--text-secondary)', fontWeight: 600,
-              padding: '2px 6px', borderRadius: 4,
-              background: 'var(--surface2)', textTransform: 'lowercase',
-            }}>#{tg}</span>
-          ))}
-          {task.points > 0 && (
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: 3,
-              color: 'var(--primary)', fontSize: 11, fontWeight: 700,
-              padding: '2px 6px', borderRadius: 4,
-              background: 'color-mix(in srgb, var(--primary) 15%, transparent)',
-            }}>
-              <Icon name="star" size={10} color="var(--primary)" stroke={2.5}/>
-              {task.points}
-            </span>
-          )}
+          <div>
+            {task.tags.map(tg => (
+              <span key={tg} style={{
+                fontSize: 10.5, color: 'var(--text-secondary)', fontWeight: 600,
+                padding: '2px 6px', borderRadius: 4,
+                background: 'var(--surface2)', textTransform: 'lowercase',
+              }}>#{tg}</span>
+            ))}
+          </div>
         </div>
       </div>
+      {task.points > 0 && (
+        <span style={{
+          display: 'inline-flex', alignItems: 'center', gap: 4,
+          color: 'var(--primary)', fontSize: 13, fontWeight: 700,
+          padding: '6px 10px', borderRadius: 8,
+          background: 'color-mix(in srgb, var(--primary) 15%, transparent)',
+          flexShrink: 0,
+        }}>
+          <Icon name="star" size={12} color="var(--primary)" stroke={2.5} />
+          {task.points}
+        </span>
+      )}
     </div>
   );
 };

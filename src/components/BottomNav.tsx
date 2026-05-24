@@ -54,15 +54,15 @@ export const BottomNav: React.FC = () => {
               position: 'relative',
             }}>
               <div style={{
-                width: 44, height: 30, borderRadius: 16,
+                width: 52, height: 34, borderRadius: 18,
                 background: active ? 'rgba(124,106,247,0.15)' : 'transparent', // var(--primary) with opacity
                 display: 'grid', placeItems: 'center',
                 transition: 'background 200ms',
               }}>
-                <Icon name={it.icon} size={20} color={active ? 'var(--primary)' : 'var(--text-secondary)'} stroke={active ? 2.2 : 1.7}/>
+                <Icon name={it.icon} size={24} color={active ? 'var(--primary)' : 'var(--text-secondary)'} stroke={active ? 2.2 : 1.7}/>
               </div>
               <span style={{
-                fontSize: 10.5, fontWeight: 600,
+                fontSize: 12.5, fontWeight: 600,
                 color: active ? 'var(--primary)' : 'var(--text-secondary)',
               }}>{it.label}</span>
             </button>

@@ -98,12 +98,12 @@ const GoalDetail: React.FC<{
             fontSize: 26, flexShrink: 0,
           }}>{goal.icon}</div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <Pill color={catColor} bg={`color-mix(in srgb, ${catColor} 12%, transparent)`} dot>{goal.category}</Pill>
             <div style={{
               color: 'var(--text-primary)', fontSize: 22, fontWeight: 700, marginTop: 8,
               lineHeight: 1.2, letterSpacing: -0.3,
             }}>{goal.title}</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
+              <Pill color={catColor} bg={`color-mix(in srgb, ${catColor} 12%, transparent)`} dot>{goal.category}</Pill>
               <span style={{
                 color: priorityMeta[goal.priority].color, fontSize: 12, fontWeight: 600,
                 display: 'inline-flex', alignItems: 'center', gap: 5,
@@ -111,7 +111,6 @@ const GoalDetail: React.FC<{
                 <span style={{ width: 6, height: 6, borderRadius: 3, background: priorityMeta[goal.priority].color }} />
                 {goal.priority} priority
               </span>
-              <span style={{ color: 'var(--text-tertiary)' }}>·</span>
               <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>
                 Ends {goal.end.slice(5).replace('-', '/')}
               </span>
@@ -497,6 +496,8 @@ const GoalsPage: React.FC = () => {
 
   if (isCreating || editGoalId) {
     const initialGoal = editGoalId ? goals.find(g => g.id === editGoalId) : undefined;
+    if (editGoalId && !initialGoal) return null; // wait for goals to load
+
     return (
       <GoalForm
         initialGoal={initialGoal}

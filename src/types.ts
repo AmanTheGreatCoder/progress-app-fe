@@ -20,6 +20,7 @@ export interface Goal {
   taskTotal: number;
   taskDone: number;
   manualLogs: ManualLog[];
+  linkedRecurringNames: string[];
 }
 
 export interface Task {
@@ -30,4 +31,7 @@ export interface Task {
   tags: string[];
   done: boolean;
   source: string;
+  isRecurring: boolean;
+  repeatFlag: string;
+  points: number;
 }

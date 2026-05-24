@@ -43,7 +43,7 @@ export const useGoals = () => {
         const data = await res.json();
         // Backend now returns linkedTaskIds as string array and logs instead of manualLogs
         // For compatibility with UI, we map logs to manualLogs
-        setGoals(data.map((g: any) => ({ ...g, linkedTaskNames: g.linkedTaskNames || [], targetCount: g.targetCount ?? 0, manualLogs: g.logs || [] })));
+        setGoals(data.map((g: any) => ({ ...g, linkedTaskNames: g.linkedTaskNames || [], linkedRecurringNames: g.linkedRecurringNames || [], targetCount: g.targetCount ?? 0, manualLogs: g.logs || [] })));
       }
     } catch (err) {
       console.error(err);

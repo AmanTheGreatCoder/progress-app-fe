@@ -90,3 +90,13 @@ body {
 }
 
 button:focus { outline: none; }
+
+@keyframes slideUpModal {
+  from { opacity: 0; transform: translateY(100vh); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.slide-up-modal {
+  animation: slideUpModal 350ms cubic-bezier(.2,.8,.2,1) forwards;
+  will-change: transform, opacity;
+}

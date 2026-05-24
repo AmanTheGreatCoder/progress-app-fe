@@ -6,10 +6,9 @@ interface TaskRowProps {
   task: Task;
   goal?: Goal;
   onToggle: () => void;
-  onEdit: () => void;
 }
 
-export const TaskRow: React.FC<TaskRowProps> = ({ task, goal, onToggle, onEdit }) => {
+export const TaskRow: React.FC<TaskRowProps> = ({ task, goal, onToggle }) => {
   const catColor = goal ? `var(--c-${goal.category.toLowerCase()})` : 'var(--text-secondary)';
   return (
     <div style={{
@@ -27,7 +26,7 @@ export const TaskRow: React.FC<TaskRowProps> = ({ task, goal, onToggle, onEdit }
       }}>
         {task.done && <Icon name="check" size={14} color="var(--bg)" stroke={2.8}/>}
       </button>
-      <div onClick={onEdit} style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
           color: task.done ? 'var(--text-secondary)' : 'var(--text-primary)',
           fontSize: 14.5, fontWeight: 500,
@@ -51,9 +50,19 @@ export const TaskRow: React.FC<TaskRowProps> = ({ task, goal, onToggle, onEdit }
               background: 'var(--surface2)', textTransform: 'lowercase',
             }}>#{tg}</span>
           ))}
+          {task.points > 0 && (
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 3,
+              color: 'var(--primary)', fontSize: 11, fontWeight: 700,
+              padding: '2px 6px', borderRadius: 4,
+              background: 'color-mix(in srgb, var(--primary) 15%, transparent)',
+            }}>
+              <Icon name="star" size={10} color="var(--primary)" stroke={2.5}/>
+              {task.points}
+            </span>
+          )}
         </div>
       </div>
-      <Icon name="chevron-right" size={18} color="var(--text-tertiary)"/>
     </div>
   );
 };

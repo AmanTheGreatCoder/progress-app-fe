@@ -36,13 +36,17 @@ const GoalDetail: React.FC<{
   onBack: () => void,
   onToggleTask: (id: string) => void,
   onOpenTask: (id: string) => void,
-  onAddLog: (goalId: string, log: ManualLog) => void
-}> = ({ goal, tasks, onBack, onToggleTask, onOpenTask, onAddLog }) => {
+  onAddLog: (goalId: string, log: ManualLog) => void,
+  onUpdateGoal: (id: string, updates: any) => void
+}> = ({ goal, tasks, onBack, onToggleTask, onOpenTask, onAddLog, onUpdateGoal }) => {
   const pct = goalPct(goal);
   const catColor = `var(--c-${goal.category.toLowerCase()})`;
   const days = goalDaysLeft(goal);
-  const linkedTasks = tasks.filter(t => t.goalId === goal.id);
+  const linkedTasks = tasks.filter(t => 
+    goal.linkedRecurringNames?.includes(t.title) && t.isRecurring
+  );
   const [showLogForm, setShowLogForm] = useState(false);
+  const [showLinkMenu, setShowLinkMenu] = useState(false);
   const [minutes, setMinutes] = useState('30');
   const [note, setNote] = useState('');
 
@@ -59,8 +63,10 @@ const GoalDetail: React.FC<{
     return () => clearTimeout(id);
   }, [pct]);
 
+  const [searchQuery, setSearchQuery] = useState('');
+
   return (
-    <div style={{ padding: '0 0 120px' }}>
+    <div className="slide-up-modal" style={{ padding: '0 0 140px', position: 'fixed', inset: 0, zIndex: 100, background: 'var(--bg)', overflowY: 'auto' }}>
       {/* Top bar */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -73,12 +79,12 @@ const GoalDetail: React.FC<{
         }}>
           <Icon name="arrow-left" size={22} color="var(--text-primary)"/>
         </button>
-        <button style={{
+        <button onClick={() => window.location.href = `?edit=${goal.id}`} style={{
           width: 40, height: 40, borderRadius: 12,
           background: 'transparent', border: 'none',
           display: 'grid', placeItems: 'center', cursor: 'pointer',
         }}>
-          <Icon name="more" size={22} color="var(--text-primary)"/>
+          <Icon name="edit" size={20} color="var(--text-primary)"/>
         </button>
       </div>
 
@@ -152,12 +158,57 @@ const GoalDetail: React.FC<{
       <div style={{
         padding: '12px 20px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <h3 style={{ color: 'var(--text-primary)', fontSize: 15, fontWeight: 700, margin: 0 }}>
-          Linked tasks
-        </h3>
-        <span style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>{linkedTasks.length} total</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <h3 style={{ color: 'var(--text-primary)', fontSize: 15, fontWeight: 700, margin: 0 }}>
+            Linked tasks
+          </h3>
+          <span style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>{linkedTasks.length} total</span>
+        </div>
+        <button onClick={() => setShowLinkMenu(!showLinkMenu)} style={{
+          background: 'none', border: 'none', color: 'var(--primary)',
+          fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: 0,
+          display: 'inline-flex', alignItems: 'center', gap: 4,
+        }}>
+          <Icon name="plus" size={14} color="var(--primary)" stroke={2.4}/>
+          Link series
+        </button>
       </div>
       <div style={{ padding: '0 20px 20px' }}>
+        {showLinkMenu && (
+          <Card pad={16} style={{ marginBottom: 16 }}>
+            <div style={{ color: 'var(--text-primary)', fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Select a recurring series</div>
+            <input 
+              value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Search tasks..." 
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text-primary)', marginBottom: 12, outline: 'none' }}
+            />
+            <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+              {Array.from(new Set(tasks.filter(t => t.isRecurring).map(t => t.title)))
+                .filter(title => title.toLowerCase().includes(searchQuery.toLowerCase()))
+                .map(title => {
+                const isLinked = goal.linkedRecurringNames?.includes(title);
+                return (
+                  <div key={title} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+                    <span style={{ color: 'var(--text-primary)', fontSize: 14 }}>{title}</span>
+                    <button onClick={() => {
+                      const newLinked = isLinked 
+                        ? (goal.linkedRecurringNames || []).filter(n => n !== title)
+                        : [...(goal.linkedRecurringNames || []), title];
+                      onUpdateGoal(goal.id, { linkedRecurringNames: newLinked });
+                    }} style={{
+                      padding: '4px 10px', borderRadius: 6,
+                      background: isLinked ? 'var(--bg)' : 'var(--primary)',
+                      color: isLinked ? 'var(--text-secondary)' : '#fff',
+                      border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600
+                    }}>
+                      {isLinked ? 'Unlink' : 'Link'}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        )}
         <Card pad={0}>
           {linkedTasks.slice(0, 4).map((t, i, arr) => (
             <div key={t.id} style={{ borderBottom: i === arr.length-1 ? 'none' : '1px solid var(--border)' }}>
@@ -266,12 +317,105 @@ const GoalDetail: React.FC<{
   );
 };
 
-const GoalsList: React.FC<{ goals: Goal[], onOpenGoal: (id: string) => void }> = ({ goals, onOpenGoal }) => {
+const GoalForm: React.FC<{ initialGoal?: Goal, onBack: () => void, onSave: (g: any) => void }> = ({ initialGoal, onBack, onSave }) => {
+  const [draft, setDraft] = useState({
+    title: initialGoal?.title || '',
+    category: initialGoal?.category || 'Health',
+    priority: initialGoal?.priority || 'Medium',
+    startDate: initialGoal?.start || new Date().toISOString().slice(0, 10),
+    deadline: initialGoal?.end || new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
+    targetFrequency: 5,
+  });
+
+  return (
+    <div className="slide-up-modal" style={{ padding: '0 0 100px', position: 'fixed', inset: 0, zIndex: 100, background: 'var(--bg)', overflowY: 'auto' }}>
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '8px 16px 12px',
+      }}>
+        <button onClick={onBack} style={{
+          width: 40, height: 40, borderRadius: 12,
+          background: 'transparent', border: 'none',
+          display: 'grid', placeItems: 'center', cursor: 'pointer',
+        }}>
+          <Icon name="x" size={22} color="var(--text-primary)"/>
+        </button>
+        <span style={{ color: 'var(--text-primary)', fontSize: 16, fontWeight: 600 }}>{initialGoal ? 'Edit Goal' : 'New Goal'}</span>
+        <button onClick={() => {
+          if (draft.title.trim()) onSave(draft);
+        }} style={{
+          padding: '8px 16px', borderRadius: 10,
+          background: 'var(--primary)', border: 'none', color: '#fff',
+          fontSize: 13, fontWeight: 600, cursor: 'pointer',
+          opacity: draft.title.trim() ? 1 : 0.5,
+        }}>{initialGoal ? 'Save' : 'Create'}</button>
+      </div>
+
+      <div style={{ padding: '20px' }}>
+        <div style={{ marginBottom: 20 }}>
+          <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', marginBottom: 8, letterSpacing: 0.5 }}>Goal Title</label>
+          <input value={draft.title} onChange={e => setDraft({...draft, title: e.target.value})} placeholder="E.g., Read 10 books" style={{
+            width: '100%', padding: '14px 16px', borderRadius: 12, border: '1px solid var(--border)',
+            background: 'var(--surface)', color: 'var(--text-primary)', fontSize: 16, outline: 'none',
+            boxSizing: 'border-box'
+          }} />
+        </div>
+
+        <div style={{ marginBottom: 20 }}>
+          <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', marginBottom: 8, letterSpacing: 0.5 }}>Category</label>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {['Health', 'Career', 'Learning', 'Wellness', 'Finance'].map(c => (
+              <button key={c} onClick={() => setDraft({...draft, category: c as any})} style={{
+                padding: '10px 14px', borderRadius: 10, border: `1px solid ${draft.category === c ? 'var(--primary)' : 'var(--border)'}`,
+                background: draft.category === c ? 'color-mix(in srgb, var(--primary) 15%, transparent)' : 'var(--surface)',
+                color: draft.category === c ? 'var(--primary)' : 'var(--text-primary)', fontWeight: 600, cursor: 'pointer'
+              }}>{c}</button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 20 }}>
+          <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', marginBottom: 8, letterSpacing: 0.5 }}>Priority</label>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {['High', 'Medium', 'Low'].map(p => (
+              <button key={p} onClick={() => setDraft({...draft, priority: p as any})} style={{
+                padding: '10px 14px', borderRadius: 10, border: `1px solid ${draft.priority === p ? 'var(--primary)' : 'var(--border)'}`,
+                background: draft.priority === p ? 'color-mix(in srgb, var(--primary) 15%, transparent)' : 'var(--surface)',
+                color: draft.priority === p ? 'var(--primary)' : 'var(--text-primary)', fontWeight: 600, cursor: 'pointer'
+              }}>{p}</button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 20, display: 'flex', gap: 12 }}>
+          <div style={{ flex: 1 }}>
+            <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', marginBottom: 8, letterSpacing: 0.5 }}>Start Date</label>
+            <input type="date" value={draft.startDate} onChange={e => setDraft({...draft, startDate: e.target.value})} style={{
+              width: '100%', padding: '12px', borderRadius: 12, border: '1px solid var(--border)',
+              background: 'var(--surface)', color: 'var(--text-primary)', fontSize: 14, outline: 'none',
+              boxSizing: 'border-box'
+            }} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', marginBottom: 8, letterSpacing: 0.5 }}>Deadline</label>
+            <input type="date" value={draft.deadline} onChange={e => setDraft({...draft, deadline: e.target.value})} style={{
+              width: '100%', padding: '12px', borderRadius: 12, border: '1px solid var(--border)',
+              background: 'var(--surface)', color: 'var(--text-primary)', fontSize: 14, outline: 'none',
+              boxSizing: 'border-box'
+            }} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const GoalsList: React.FC<{ goals: Goal[], onOpenGoal: (id: string) => void, onCreateGoal: () => void }> = ({ goals, onOpenGoal, onCreateGoal }) => {
   const [tab, setTab] = useState<'active' | 'archived'>('active');
   const filtered = goals.filter(g => tab === 'active' ? !g.archived : g.archived);
 
   return (
-    <div style={{ padding: '8px 0 96px' }}>
+    <div style={{ padding: '8px 0 140px' }}>
       <div style={{
         padding: '8px 20px 20px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -284,7 +428,7 @@ const GoalsList: React.FC<{ goals: Goal[], onOpenGoal: (id: string) => void }> =
             {goals.filter(g=>!g.archived).length} active · {goals.filter(g=>g.archived).length} archived
           </div>
         </div>
-        <button style={{
+        <button onClick={onCreateGoal} style={{
           width: 44, height: 44, borderRadius: 14,
           background: 'var(--primary)', border: 'none',
           display: 'grid', placeItems: 'center', cursor: 'pointer',
@@ -343,10 +487,30 @@ const GoalsList: React.FC<{ goals: Goal[], onOpenGoal: (id: string) => void }> =
 };
 
 const GoalsPage: React.FC = () => {
-  const { goals, tasks, toggleTask, addLog } = useAppContext();
+  const { goals, tasks, toggleTask, addLog, updateGoal, addGoal } = useAppContext();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const goalId = searchParams.get('id');
+  const editGoalId = searchParams.get('edit');
+  const isCreating = searchParams.get('create');
+
+  if (isCreating || editGoalId) {
+    const initialGoal = editGoalId ? goals.find(g => g.id === editGoalId) : undefined;
+    return (
+      <GoalForm
+        initialGoal={initialGoal}
+        onBack={() => setSearchParams({})}
+        onSave={(draft) => {
+          if (editGoalId) {
+            updateGoal(editGoalId, draft);
+          } else {
+            addGoal(draft);
+          }
+          setSearchParams({});
+        }}
+      />
+    );
+  }
 
   if (goalId) {
     const goal = goals.find(g => g.id === goalId);
@@ -359,12 +523,13 @@ const GoalsPage: React.FC = () => {
           onToggleTask={toggleTask}
           onOpenTask={(id) => navigate(`/tasks?id=${id}`)}
           onAddLog={addLog}
+          onUpdateGoal={updateGoal}
         />
       );
     }
   }
 
-  return <GoalsList goals={goals} onOpenGoal={(id) => setSearchParams({ id })} />;
+  return <GoalsList goals={goals} onOpenGoal={(id) => setSearchParams({ id })} onCreateGoal={() => setSearchParams({ create: 'true' })} />;
 };
 
 export default GoalsPage;

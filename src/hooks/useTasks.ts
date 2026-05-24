@@ -28,6 +28,9 @@ export const useTasks = () => {
             date: item.date,
             completed: item.completed,
             points: item.points ?? 0,
+            isRecurring: item.isRecurring || false,
+            repeatFlag: item.repeatFlag || '',
+            ticktickProjectId: item.ticktickProjectId || '',
           };
         }
         // Notion raw shape (fallback)
@@ -40,6 +43,9 @@ export const useTasks = () => {
           date: p.Date?.date?.start?.split('T')[0] || getLocalYMD(),
           completed: p.Done?.checkbox === true,
           points: 0,
+          isRecurring: false,
+          repeatFlag: '',
+          ticktickProjectId: '',
         };
       });
 

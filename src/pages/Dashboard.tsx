@@ -10,7 +10,8 @@ const Dashboard: React.FC = () => {
   const { goals, tasks, toggleTask } = useAppContext();
   const navigate = useNavigate();
 
-  const todays = tasks.filter(t => t.due === 'Today');
+
+  const todays = tasks.filter(t => t.due === 'Today' || t.due === new Date().toISOString().split('T')[0]);
   const doneToday = todays.filter(t => t.done).length;
   const active = goals.filter(g => !g.archived);
   
@@ -20,10 +21,11 @@ const Dashboard: React.FC = () => {
     return goalDaysLeft(a) - goalDaysLeft(b);
   });
   
-  const totalStreak = active.length > 0 ? Math.max(...active.map(g => g.streak)) : 0;
+  const totalStreak = active.length > 0 ? Math.max(...active.map(g => g.streak || 0)) : 0;
 
   return (
-    <div style={{ padding: '8px 0 96px' }}>
+    <div style={{ padding: '8px 0 140px' }}>
+
       {/* Greeting + streak hero */}
       <div style={{ padding: '8px 20px 20px' }}>
         <div style={{ color: 'var(--text-secondary)', fontSize: 13, letterSpacing: 0.4, textTransform: 'uppercase' }}>
@@ -91,7 +93,6 @@ const Dashboard: React.FC = () => {
               <TaskRow
                 task={t} goal={goals.find(g => g.id === t.goalId)}
                 onToggle={() => toggleTask(t.id)}
-                onEdit={() => navigate(`/tasks?id=${t.id}`)}
               />
             </div>
           ))}

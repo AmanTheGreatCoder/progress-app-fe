@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext } from 'react';
 import type { ReactNode } from 'react';
 import type { Goal, Task, ManualLog } from '../types';
-import { initialGoals, initialTasks } from '../data';
+import { useGoals } from '../hooks/useGoals';
+import { useTasks } from '../hooks/useTasks';
 
 interface AppContextType {
   goals: Goal[];
@@ -9,49 +10,102 @@ interface AppContextType {
   toggleTask: (id: string) => void;
   addLog: (goalId: string, entry: ManualLog) => void;
   saveTask: (draft: Task) => void;
+  syncTickTick: () => void;
+  updateGoal: (id: string, updates: any) => void;
+  addGoal: (input: any) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [goals, setGoals] = useState<Goal[]>(initialGoals);
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const { goals, addGoal, updateGoal, logProgress, refetch: refetchGoals } = useGoals();
+  const { tasks, refetch: refetchTasks } = useTasks();
 
-  const toggleTask = (id: string) => {
-    setTasks(ts => ts.map(t => {
-      if (t.id !== id) return t;
-      const newDone = !t.done;
-      // increment/decrement parent goal taskDone
-      setGoals(gs => gs.map(g => g.id === t.goalId
-        ? { ...g, taskDone: Math.max(0, Math.min(g.taskTotal, g.taskDone + (newDone ? 1 : -1))) }
-        : g
-      ));
-      return { ...t, done: newDone };
-    }));
+  const toggleTask = async (id: string) => {
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+    try {
+      await fetch(`http://localhost:3001/api/tasks/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ completed: !task.completed })
+      });
+      refetchTasks();
+      refetchGoals(); // progress might have changed
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  const addLog = (goalId: string, entry: ManualLog) => {
-    setGoals(gs => gs.map(g => g.id === goalId
-      ? { ...g, manualLogs: [entry, ...g.manualLogs] }
-      : g
-    ));
+  const addLog = async (goalId: string, entry: ManualLog) => {
+    await logProgress(goalId, entry.minutes, entry.note);
   };
 
-  const saveTask = (draft: Task) => {
-    setTasks(ts => ts.map(t => t.id === draft.id ? draft : t));
+  const saveTask = async (_draft: Task) => {
+    // Currently task edits are read-only except tags/due in UI. We can skip for now or implement full sync.
+    // For now just refetch to reset.
+    refetchTasks();
   };
+
+  const syncTickTick = async () => {
+    try {
+      await fetch('http://localhost:3001/api/sync', { method: 'POST' });
+      refetchTasks();
+      refetchGoals();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // Convert goals to UI expected format
+  const mappedGoals: Goal[] = goals.map((g: any) => {
+    let icon = '🎯';
+    if (g.category === 'Health') icon = '👟';
+    if (g.category === 'Career') icon = '🚀';
+    if (g.category === 'Finance') icon = '💵';
+    if (g.category === 'Learning') icon = '📚';
+    if (g.category === 'Wellness') icon = '🧘';
+    
+    return {
+      id: g.id,
+      title: g.title,
+      category: g.category as any,
+      priority: g.priority as any,
+      start: g.startDate,
+      end: g.deadline,
+      icon,
+      streak: 0,
+      archived: g.archived,
+      taskTotal: g.total || 0,
+      taskDone: g.done || 0,
+      manualLogs: g.manualLogs || [],
+      linkedRecurringNames: g.linkedRecurringNames || [],
+    };
+  });
+
+  // Convert tasks to UI expected format
+  const mappedTasks: Task[] = tasks.map((t: any) => ({
+    id: t.id,
+    title: t.name,
+    goalId: '',
+    due: t.date,
+    tags: t.tags || [],
+    done: t.completed || t.done, // Handle both raw backend and patched
+    source: 'TickTick',
+    isRecurring: t.isRecurring,
+    repeatFlag: t.repeatFlag,
+    points: t.points || 0,
+  }));
 
   return (
-    <AppContext.Provider value={{ goals, tasks, toggleTask, addLog, saveTask }}>
+    <AppContext.Provider value={{ goals: mappedGoals, tasks: mappedTasks, toggleTask, addLog, saveTask, syncTickTick, updateGoal, addGoal }}>
       {children}
     </AppContext.Provider>
   );
 };
 
 export const useAppContext = () => {
-  const context = useContext(AppContext);
-  if (context === undefined) {
-    throw new Error('useAppContext must be used within an AppProvider');
-  }
-  return context;
+  const ctx = useContext(AppContext);
+  if (!ctx) throw new Error('useAppContext must be used within AppProvider');
+  return ctx;
 };

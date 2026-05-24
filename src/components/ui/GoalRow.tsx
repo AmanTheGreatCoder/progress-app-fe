@@ -4,6 +4,7 @@ import { StreakChip } from './StreakChip';
 import { Pill } from './Pill';
 import { ProgressBar } from './ProgressBar';
 import type { Goal } from '../../types';
+import { getLocalYMD } from '../../utils/dateUtils';
 
 interface GoalRowProps {
   goal: Goal;
@@ -13,7 +14,7 @@ interface GoalRowProps {
 export const goalPct = (g: Goal) => g.taskTotal === 0 ? 0 : Math.round((g.taskDone / g.taskTotal) * 100);
 
 export const daysBetween = (a: string, b: string) => Math.max(0, Math.round((new Date(b).getTime() - new Date(a).getTime()) / 86400000));
-export const TODAY = '2026-05-23'; // Hardcoded today as in demo
+export const TODAY = getLocalYMD(); // Always the real local date
 export const goalDaysLeft = (g: Goal) => daysBetween(TODAY, g.end);
 
 export const GoalRow: React.FC<GoalRowProps> = ({ goal, onClick }) => {

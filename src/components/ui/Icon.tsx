@@ -41,6 +41,8 @@ export const Icon: React.FC<IconProps> = ({ name, size = 22, color, stroke = 1.7
     case 'trend': return (<svg {...props}><path d="M4 17l5-5 4 4 7-8"/><path d="M14 8h6v6"/></svg>);
     case 'tag': return (<svg {...props}><path d="M3 12V4h8l10 10-8 8L3 12z"/><circle cx="7.5" cy="7.5" r="1.2" fill={c} stroke="none"/></svg>);
     case 'x': return (<svg {...props}><path d="M6 6l12 12M18 6 6 18"/></svg>);
+    case 'star': return (<svg {...props}><path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>);
+    case 'menu': return (<svg {...props}><path d="M3 12h18M3 6h18M3 18h18"/></svg>);
     default: return null;
   }
 };

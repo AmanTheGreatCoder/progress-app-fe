@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getLocalYMD } from '../utils/dateUtils';
+import api from '../services/api';
 
 export const useTasks = () => {
   const [tasks, setTasks] = useState<any[]>([]);
@@ -10,9 +11,8 @@ export const useTasks = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('http://localhost:3001/api/tasks');
-      if (!response.ok) throw new Error('Failed to fetch from backend');
-      const data = await response.json();
+      const response = await api.get('/tasks');
+      const data = response.data;
 
       // Data from DB already has tags as array (backend parses it)
       // Fall back to Notion raw shape if still hitting old endpoint
@@ -61,7 +61,7 @@ export const useTasks = () => {
   useEffect(() => { fetchTasks(); }, [fetchTasks]);
 
   const deleteTask = useCallback(async (id: string) => {
-    await fetch(`http://localhost:3001/api/tasks/${id}`, { method: 'DELETE' });
+    await api.delete(`/tasks/${id}`);
     setTasks(prev => prev.filter(t => t.id !== id));
   }, []);
 

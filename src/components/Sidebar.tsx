@@ -2,6 +2,7 @@ import React from 'react';
 import { Icon } from './ui/Icon';
 import { Card } from './ui/Card';
 import { useAppContext } from '../context/AppContext';
+import api from '../services/api';
 
 export const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const { syncTickTick } = useAppContext();
@@ -10,9 +11,8 @@ export const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
 
   React.useEffect(() => {
     if (isOpen) {
-      fetch('http://localhost:3001/api/ticktick/status')
-        .then(res => res.json())
-        .then(data => setTicktickStatus(data))
+      api.get('/ticktick/status')
+        .then(res => setTicktickStatus(res.data))
         .catch(console.error);
     }
   }, [isOpen]);
@@ -25,9 +25,8 @@ export const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
 
   const handleConnect = async () => {
     try {
-      const res = await fetch('http://localhost:3001/api/ticktick/auth');
-      const data = await res.json();
-      window.location.href = data.url;
+      const res = await api.get('/ticktick/auth');
+      window.location.href = res.data.url;
     } catch (err) { console.error(err); }
   };
 

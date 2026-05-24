@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import api from '../services/api';
 
 export interface GoalLog {
   date: string;
@@ -38,13 +39,10 @@ export const useGoals = () => {
 
   const fetchGoals = useCallback(async () => {
     try {
-      const res = await fetch('http://localhost:3001/api/goals');
-      if (res.ok) {
-        const data = await res.json();
-        // Backend now returns linkedTaskIds as string array and logs instead of manualLogs
-        // For compatibility with UI, we map logs to manualLogs
-        setGoals(data.map((g: any) => ({ ...g, linkedTaskNames: g.linkedTaskNames || [], linkedRecurringNames: g.linkedRecurringNames || [], targetCount: g.targetCount ?? 0, manualLogs: g.logs || [] })));
-      }
+      const res = await api.get('/goals');
+      // Backend now returns linkedTaskIds as string array and logs instead of manualLogs
+      // For compatibility with UI, we map logs to manualLogs
+      setGoals(res.data.map((g: any) => ({ ...g, linkedTaskNames: g.linkedTaskNames || [], linkedRecurringNames: g.linkedRecurringNames || [], targetCount: g.targetCount ?? 0, manualLogs: g.logs || [] })));
     } catch (err) {
       console.error(err);
     }
@@ -56,41 +54,29 @@ export const useGoals = () => {
 
   const addGoal = useCallback(async (input: Pick<Goal, 'title' | 'startDate' | 'deadline' | 'category' | 'targetFrequency' | 'priority' | 'linkedTaskIds'>) => {
     try {
-      const res = await fetch('http://localhost:3001/api/goals', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(input)
-      });
-      if (res.ok) fetchGoals();
+      await api.post('/goals', input);
+      fetchGoals();
     } catch (err) { console.error(err); }
   }, [fetchGoals]);
 
   const updateGoal = useCallback(async (id: string, updates: Partial<Goal>) => {
     try {
-      const res = await fetch(`http://localhost:3001/api/goals/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates)
-      });
-      if (res.ok) fetchGoals();
+      await api.patch(`/goals/${id}`, updates);
+      fetchGoals();
     } catch (err) { console.error(err); }
   }, [fetchGoals]);
 
   const deleteGoal = useCallback(async (id: string) => {
     try {
-      const res = await fetch(`http://localhost:3001/api/goals/${id}`, { method: 'DELETE' });
-      if (res.ok) fetchGoals();
+      await api.delete(`/goals/${id}`);
+      fetchGoals();
     } catch (err) { console.error(err); }
   }, [fetchGoals]);
 
   const logProgress = useCallback(async (goalId: string, effortMinutes: number = 15, notes: string = '') => {
     try {
-      const res = await fetch(`http://localhost:3001/api/goals/${goalId}/log`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ effortMinutes, notes })
-      });
-      if (res.ok) fetchGoals();
+      await api.post(`/goals/${goalId}/log`, { effortMinutes, notes });
+      fetchGoals();
     } catch (err) { console.error(err); }
   }, [fetchGoals]);
 

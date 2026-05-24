@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import type { Goal, Task, ManualLog } from '../types';
 import { useGoals } from '../hooks/useGoals';
 import { useTasks } from '../hooks/useTasks';
+import api from '../services/api';
 
 interface AppContextType {
   goals: Goal[];
@@ -25,11 +26,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const task = tasks.find(t => t.id === id);
     if (!task) return;
     try {
-      await fetch(`http://localhost:3001/api/tasks/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ completed: !task.completed })
-      });
+      await api.patch(`/tasks/${id}`, { completed: !task.completed });
       refetchTasks();
       refetchGoals(); // progress might have changed
     } catch (e) {
@@ -49,7 +46,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const syncTickTick = async () => {
     try {
-      await fetch('http://localhost:3001/api/sync', { method: 'POST' });
+      await api.post('/sync');
       refetchTasks();
       refetchGoals();
     } catch (e) {

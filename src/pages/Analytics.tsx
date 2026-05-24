@@ -410,7 +410,7 @@ const Analytics: React.FC = () => {
         <DateStrip selected={selectedDate} onSelect={setSelectedDate} />
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 140, scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+      <div style={{ flex: 1, overflowY: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         <div style={{ padding: '18px 20px 0' }}>
           <DayPointsCard dayInfo={dayInfo} dateMeta={dateMeta} />
         </div>
@@ -508,6 +508,7 @@ const Analytics: React.FC = () => {
             </div>
           </>
         )}
+        <div style={{ height: 140, flexShrink: 0 }} />
       </div>
     </div>
   );

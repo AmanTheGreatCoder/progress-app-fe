@@ -1,11 +1,11 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { useAppContext } from '../context/AppContext';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Card } from '../components/ui/Card';
+import { DateStrip, STRIP_DAYS } from '../components/ui/DateStrip';
+import { TODAY } from '../components/ui/GoalRow';
 import { Icon } from '../components/ui/Icon';
 import { ProgressBar } from '../components/ui/ProgressBar';
-import { getLocalYMD, DAY_NAMES, MONTH_NAMES, addDays, todayDate } from '../utils/dateUtils';
-import { TODAY } from '../components/ui/GoalRow';
-import { DateStrip, STRIP_DAYS } from '../components/ui/DateStrip';
+import { useAppContext } from '../context/AppContext';
+import { DAY_NAMES, MONTH_NAMES, addDays, getLocalYMD, todayDate } from '../utils/dateUtils';
 
 const T = {
   bg: 'var(--bg, #0F0F14)',
@@ -20,15 +20,15 @@ const T = {
   textTertiary: 'var(--text-tertiary, #5A5A6E)',
   border: 'var(--border, #2A2A3C)',
   cat: {
-    Health:   '#44D9A2',
-    Career:   '#7C6AF7',
-    Finance:  '#FFB347',
+    Health: '#44D9A2',
+    Career: '#7C6AF7',
+    Finance: '#FFB347',
     Learning: '#4ECDC4',
     Wellness: '#F472B6',
-    Routine:  '#a78bfa',
-    Work:     '#fb923c',
+    Routine: '#a78bfa',
+    Work: '#fb923c',
     Personal: '#fb7185',
-    Other:    '#9ca3af'
+    Other: '#9ca3af'
   } as Record<string, string>,
 };
 
@@ -37,7 +37,7 @@ const POINTS_TARGET = 250;
 const fmtKey = (d: Date) => getLocalYMD(d);
 
 const dueToKey = (due: string) => {
-  if (due === 'Today')    { return STRIP_DAYS.find(d => d.offset === 0)?.key; }
+  if (due === 'Today') { return STRIP_DAYS.find(d => d.offset === 0)?.key; }
   if (due === 'Tomorrow') { return STRIP_DAYS.find(d => d.offset === 1)?.key; }
   const idx = DAY_NAMES.findIndex(n => n === due);
   if (idx < 0) return due; // Might already be a date string like YYYY-MM-DD
@@ -67,13 +67,13 @@ const PointsRing = ({ pct, size = 104, stroke = 9, color, bg, children }: any) =
   return (
     <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
       <svg width={size} height={size}>
-        <circle cx={size/2} cy={size/2} r={r} fill="none"
-          stroke={bg || T.surface2} strokeWidth={stroke}/>
-        <circle cx={size/2} cy={size/2} r={r} fill="none"
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none"
+          stroke={bg || T.surface2} strokeWidth={stroke} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none"
           stroke={color || T.primary} strokeWidth={stroke} strokeLinecap="round"
           strokeDasharray={c} strokeDashoffset={offset}
-          transform={`rotate(-90 ${size/2} ${size/2})`}
-          style={{ transition: 'stroke-dashoffset 1100ms cubic-bezier(.2,.8,.2,1)' }}/>
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+          style={{ transition: 'stroke-dashoffset 1100ms cubic-bezier(.2,.8,.2,1)' }} />
       </svg>
       <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center' }}>
         {children}
@@ -87,8 +87,8 @@ const DayPointsCard = ({ dayInfo, dateMeta }: any) => {
   const pct = Math.min(100, (dayInfo.total / target) * 100);
   const heading = dateMeta.offset === 0 ? 'Today'
     : dateMeta.offset === 1 ? 'Tomorrow'
-    : dateMeta.offset === -1 ? 'Yesterday'
-    : `${dateMeta.dayName} ${dateMeta.dayNum}`;
+      : dateMeta.offset === -1 ? 'Yesterday'
+        : `${dateMeta.dayName} ${dateMeta.dayNum}`;
   const reached = dayInfo.total >= target;
   const accent = reached ? T.success : T.primary;
   return (
@@ -105,12 +105,12 @@ const DayPointsCard = ({ dayInfo, dateMeta }: any) => {
             <span style={{ color: T.textSecondary, fontSize: 14 }}>/ {target}</span>
           </div>
           <div style={{ marginTop: 14, maxWidth: 180 }}>
-            <ProgressBar value={pct} color={accent} bg={'var(--bg)'} height={5}/>
+            <ProgressBar value={pct} color={accent} bg={'var(--bg)'} height={5} />
           </div>
           <div style={{ color: T.textSecondary, fontSize: 12, marginTop: 8 }}>
             {dayInfo.isFuture ? "Hasn't happened yet"
               : reached ? 'Daily goal reached'
-              : `${target - dayInfo.total} pts to daily goal`}
+                : `${target - dayInfo.total} pts to daily goal`}
           </div>
         </div>
         <PointsRing pct={pct} color={accent}>
@@ -144,13 +144,13 @@ const CategoryBreakdown = ({ dayInfo }: any) => {
             width: `${(pts / total) * 100}%`,
             background: T.cat[cat] || T.cat.Other,
             transition: 'width 800ms cubic-bezier(.2,.8,.2,1)',
-          }}/>
+          }} />
         ))}
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 18px', marginTop: 14 }}>
         {cats.map(([cat, pts]) => (
           <div key={cat} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ width: 8, height: 8, borderRadius: 4, background: T.cat[cat] || T.cat.Other, flexShrink: 0 }}/>
+            <span style={{ width: 8, height: 8, borderRadius: 4, background: T.cat[cat] || T.cat.Other, flexShrink: 0 }} />
             <span style={{ color: T.textPrimary, fontSize: 12.5, fontWeight: 600, flex: 1 }}>{cat}</span>
             <span style={{ color: T.textSecondary, fontSize: 12, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{pts}</span>
           </div>
@@ -173,7 +173,7 @@ const WeekChart = ({ weekDays, selectedKey, onSelectDay }: any) => {
           bottom: `calc(${targetPct}% - 1px)`,
           borderTop: `1px dashed ${T.textTertiary}`,
           opacity: 0.6,
-        }}/>
+        }} />
         <span style={{
           position: 'absolute', right: 0, top: 0,
           color: T.textTertiary, fontSize: 9.5, fontWeight: 700,
@@ -191,7 +191,7 @@ const WeekChart = ({ weekDays, selectedKey, onSelectDay }: any) => {
             const h = d.isFuture ? 3 : Math.max(3, (d.points / maxPts) * 100);
             const color = d.isFuture ? T.surface2
               : reached ? T.success
-              : T.primary;
+                : T.primary;
             return (
               <button key={d.key} onClick={() => onSelectDay(d.key)} style={{
                 background: 'transparent', border: 'none', padding: 0, cursor: 'pointer',
@@ -216,7 +216,7 @@ const WeekChart = ({ weekDays, selectedKey, onSelectDay }: any) => {
                   outlineOffset: -1.5,
                   transition: 'opacity 200ms, height 800ms cubic-bezier(.2,.8,.2,1)',
                   width: '100%',
-                }}/>
+                }} />
               </button>
             );
           })}
@@ -269,7 +269,7 @@ const EarnedTasksList = ({ items, goals }: any) => {
                 whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
               }}>{it.title}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
-                <span style={{ width: 5, height: 5, borderRadius: 3, background: cat }}/>
+                <span style={{ width: 5, height: 5, borderRadius: 3, background: cat }} />
                 <span style={{ color: T.textSecondary, fontSize: 11.5 }}>{it.category}</span>
                 <span style={{ color: T.textTertiary, fontSize: 11.5 }}>·</span>
                 <span style={{ color: T.textSecondary, fontSize: 11.5 }}>{it.source}</span>
@@ -391,8 +391,8 @@ const Analytics: React.FC = () => {
 
   const heroLabel = dateMeta.offset === 0 ? 'today'
     : dateMeta.offset === 1 ? 'tomorrow'
-    : dateMeta.offset === -1 ? 'yesterday'
-    : `${dateMeta.dayName} ${dateMeta.dayNum}`;
+      : dateMeta.offset === -1 ? 'yesterday'
+        : `${dateMeta.dayName} ${dateMeta.dayNum}`;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
@@ -407,107 +407,107 @@ const Analytics: React.FC = () => {
           </div>
         </div>
 
-        <DateStrip selected={selectedDate} onSelect={setSelectedDate}/>
+        <DateStrip selected={selectedDate} onSelect={setSelectedDate} />
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 140, scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         <div style={{ padding: '18px 20px 0' }}>
-        <DayPointsCard dayInfo={dayInfo} dateMeta={dateMeta}/>
-      </div>
-
-      {dayInfo.items.length > 0 && (
-        <div style={{ padding: '12px 20px 0' }}>
-          <CategoryBreakdown dayInfo={dayInfo}/>
+          <DayPointsCard dayInfo={dayInfo} dateMeta={dateMeta} />
         </div>
-      )}
 
-      {dayInfo.items.length === 0 && !dayInfo.isFuture && (
-        <div style={{ padding: '12px 20px 0' }}>
-          <Card pad={20} style={{ textAlign: 'center' }}>
-            <Icon name="sparkle" size={22} color={T.textTertiary} style={{ display: 'inline-block' }}/>
-            <div style={{ color: T.textPrimary, fontSize: 13.5, fontWeight: 600, marginTop: 8 }}>
-              No points earned {heroLabel}
+        {dayInfo.items.length > 0 && (
+          <div style={{ padding: '12px 20px 0' }}>
+            <CategoryBreakdown dayInfo={dayInfo} />
+          </div>
+        )}
+
+        {dayInfo.items.length === 0 && !dayInfo.isFuture && (
+          <div style={{ padding: '12px 20px 0' }}>
+            <Card pad={20} style={{ textAlign: 'center' }}>
+              <Icon name="sparkle" size={22} color={T.textTertiary} style={{ display: 'inline-block' }} />
+              <div style={{ color: T.textPrimary, fontSize: 13.5, fontWeight: 600, marginTop: 8 }}>
+                No points earned {heroLabel}
+              </div>
+              <div style={{ color: T.textSecondary, fontSize: 12, marginTop: 3 }}>
+                Complete tasks to earn points automatically.
+              </div>
+            </Card>
+          </div>
+        )}
+
+        <div style={{ padding: '24px 20px 10px' }}>
+          <h3 style={{ color: T.textPrimary, fontSize: 16, fontWeight: 700, margin: 0 }}>Weekly progress</h3>
+        </div>
+        <div style={{ padding: '0 20px' }}>
+          <Card pad={18}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+              <button onClick={() => setWeekOffset(w => w - 1)} style={{
+                width: 32, height: 32, borderRadius: 999,
+                background: T.bg, border: `1px solid ${T.border}`,
+                display: 'grid', placeItems: 'center', cursor: 'pointer', padding: 0,
+              }}>
+                <Icon name="chevron-right" size={16} color={T.textPrimary} style={{ transform: 'rotate(180deg)' }} />
+              </button>
+              <div style={{ textAlign: 'center', flex: 1, minWidth: 0 }}>
+                <div style={{ color: T.textSecondary, fontSize: 10.5, letterSpacing: 0.5, textTransform: 'uppercase', fontWeight: 700 }}>
+                  {weekOffset === 0 ? 'This week' : weekOffset === -1 ? 'Last week' : `${-weekOffset} weeks ago`}
+                </div>
+                <div style={{ color: T.textPrimary, fontSize: 15, fontWeight: 700, marginTop: 2 }}>
+                  {weekRange}
+                </div>
+              </div>
+              <button onClick={() => setWeekOffset(w => Math.min(0, w + 1))} disabled={!canForward} style={{
+                width: 32, height: 32, borderRadius: 999,
+                background: T.bg, border: `1px solid ${T.border}`,
+                display: 'grid', placeItems: 'center', padding: 0,
+                cursor: canForward ? 'pointer' : 'not-allowed',
+                opacity: canForward ? 1 : 0.35,
+              }}>
+                <Icon name="chevron-right" size={16} color={T.textPrimary} />
+              </button>
             </div>
-            <div style={{ color: T.textSecondary, fontSize: 12, marginTop: 3 }}>
-              Complete tasks to earn points automatically.
+
+            <div style={{ marginTop: 18 }}>
+              <WeekChart weekDays={weekDays} selectedKey={selectedDate} onSelectDay={handleSelectDay} />
+            </div>
+
+            <div style={{
+              display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 10,
+              marginTop: 16, paddingTop: 16, borderTop: `1px solid ${T.border}`,
+            }}>
+              {[
+                { l: 'Total', v: weekTotal, c: T.textPrimary },
+                { l: 'Avg/day', v: dailyAvg, c: T.textPrimary },
+                { l: 'Goals hit', v: `${daysHitGoal}/${realDays.length || 7}`, c: daysHitGoal > 0 ? T.success : T.textPrimary },
+                { l: 'vs last', v: `${delta >= 0 ? '+' : ''}${delta}`, c: delta >= 0 ? T.success : '#FF6B7A' },
+              ].map((s, i) => (
+                <div key={i}>
+                  <div style={{ color: T.textSecondary, fontSize: 9.5, letterSpacing: 0.5, textTransform: 'uppercase', fontWeight: 700 }}>{s.l}</div>
+                  <div style={{ color: s.c, fontSize: 16, fontWeight: 700, marginTop: 4, fontVariantNumeric: 'tabular-nums' }}>{s.v}</div>
+                </div>
+              ))}
             </div>
           </Card>
         </div>
-      )}
 
-      <div style={{ padding: '24px 20px 10px' }}>
-        <h3 style={{ color: T.textPrimary, fontSize: 16, fontWeight: 700, margin: 0 }}>Weekly progress</h3>
-      </div>
-      <div style={{ padding: '0 20px' }}>
-        <Card pad={18}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-            <button onClick={() => setWeekOffset(w => w - 1)} style={{
-              width: 32, height: 32, borderRadius: 999,
-              background: T.bg, border: `1px solid ${T.border}`,
-              display: 'grid', placeItems: 'center', cursor: 'pointer', padding: 0,
+        {dayInfo.items.length > 0 && (
+          <>
+            <div style={{
+              padding: '24px 20px 10px',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             }}>
-              <Icon name="chevron-right" size={16} color={T.textPrimary} style={{ transform: 'rotate(180deg)' }}/>
-            </button>
-            <div style={{ textAlign: 'center', flex: 1, minWidth: 0 }}>
-              <div style={{ color: T.textSecondary, fontSize: 10.5, letterSpacing: 0.5, textTransform: 'uppercase', fontWeight: 700 }}>
-                {weekOffset === 0 ? 'This week' : weekOffset === -1 ? 'Last week' : `${-weekOffset} weeks ago`}
-              </div>
-              <div style={{ color: T.textPrimary, fontSize: 15, fontWeight: 700, marginTop: 2 }}>
-                {weekRange}
-              </div>
+              <h3 style={{ color: T.textPrimary, fontSize: 16, fontWeight: 700, margin: 0 }}>
+                Earned {heroLabel}
+              </h3>
+              <span style={{ color: T.textTertiary, fontSize: 12, fontWeight: 600 }}>
+                {dayInfo.items.length} task{dayInfo.items.length === 1 ? '' : 's'}
+              </span>
             </div>
-            <button onClick={() => setWeekOffset(w => Math.min(0, w + 1))} disabled={!canForward} style={{
-              width: 32, height: 32, borderRadius: 999,
-              background: T.bg, border: `1px solid ${T.border}`,
-              display: 'grid', placeItems: 'center', padding: 0,
-              cursor: canForward ? 'pointer' : 'not-allowed',
-              opacity: canForward ? 1 : 0.35,
-            }}>
-              <Icon name="chevron-right" size={16} color={T.textPrimary}/>
-            </button>
-          </div>
-
-          <div style={{ marginTop: 18 }}>
-            <WeekChart weekDays={weekDays} selectedKey={selectedDate} onSelectDay={handleSelectDay}/>
-          </div>
-
-          <div style={{
-            display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 10,
-            marginTop: 16, paddingTop: 16, borderTop: `1px solid ${T.border}`,
-          }}>
-            {[
-              { l: 'Total', v: weekTotal, c: T.textPrimary },
-              { l: 'Avg/day', v: dailyAvg, c: T.textPrimary },
-              { l: 'Goals hit', v: `${daysHitGoal}/${realDays.length || 7}`, c: daysHitGoal > 0 ? T.success : T.textPrimary },
-              { l: 'vs last', v: `${delta >= 0 ? '+' : ''}${delta}`, c: delta >= 0 ? T.success : '#FF6B7A' },
-            ].map((s, i) => (
-              <div key={i}>
-                <div style={{ color: T.textSecondary, fontSize: 9.5, letterSpacing: 0.5, textTransform: 'uppercase', fontWeight: 700 }}>{s.l}</div>
-                <div style={{ color: s.c, fontSize: 16, fontWeight: 700, marginTop: 4, fontVariantNumeric: 'tabular-nums' }}>{s.v}</div>
-              </div>
-            ))}
-          </div>
-        </Card>
-      </div>
-
-      {dayInfo.items.length > 0 && (
-        <>
-          <div style={{
-            padding: '24px 20px 10px',
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          }}>
-            <h3 style={{ color: T.textPrimary, fontSize: 16, fontWeight: 700, margin: 0 }}>
-              Earned {heroLabel}
-            </h3>
-            <span style={{ color: T.textTertiary, fontSize: 12, fontWeight: 600 }}>
-              {dayInfo.items.length} task{dayInfo.items.length === 1 ? '' : 's'}
-            </span>
-          </div>
-          <div style={{ padding: '0 20px' }}>
-            <EarnedTasksList items={dayInfo.items} goals={goals}/>
-          </div>
-        </>
-      )}
+            <div style={{ padding: '0 20px' }}>
+              <EarnedTasksList items={dayInfo.items} goals={goals} />
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

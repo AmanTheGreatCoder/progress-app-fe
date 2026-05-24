@@ -1,11 +1,11 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { useAppContext } from '../context/AppContext';
+import React, { useMemo, useState } from 'react';
 import { Card } from '../components/ui/Card';
+import { DateStrip, STRIP_DAYS } from '../components/ui/DateStrip';
 import { Icon } from '../components/ui/Icon';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { TaskRow } from '../components/ui/TaskRow';
-import { DateStrip, STRIP_DAYS } from '../components/ui/DateStrip';
-import type { Task, Goal } from '../types';
+import { useAppContext } from '../context/AppContext';
+import type { Goal, Task } from '../types';
 
 
 

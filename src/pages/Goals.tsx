@@ -38,7 +38,7 @@ const GoalDetail: React.FC<{
   onOpenTask: (id: string) => void,
   onAddLog: (goalId: string, log: ManualLog) => void,
   onUpdateGoal: (id: string, updates: any) => void
-}> = ({ goal, tasks, onBack, onToggleTask, onOpenTask, onAddLog, onUpdateGoal }) => {
+}> = ({ goal, tasks, onBack, onToggleTask, onAddLog, onUpdateGoal }) => {
   const pct = goalPct(goal);
   const catColor = `var(--c-${goal.category.toLowerCase()})`;
   const days = goalDaysLeft(goal);

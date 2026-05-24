@@ -8,8 +8,8 @@ interface TaskRowProps {
   onToggle: () => void;
 }
 
-export const TaskRow: React.FC<TaskRowProps> = ({ task, goal, onToggle }) => {
-  const catColor = goal ? `var(--c-${goal.category.toLowerCase()})` : 'var(--text-secondary)';
+export const TaskRow: React.FC<TaskRowProps> = ({ task, onToggle }) => {
+  // const catColor = goal ? `var(--c-${goal.category.toLowerCase()})` : 'var(--text-secondary)';
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 14,

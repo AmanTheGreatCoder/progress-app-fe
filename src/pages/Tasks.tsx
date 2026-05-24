@@ -33,9 +33,9 @@ const TasksList: React.FC<{ tasks: Task[], goals: Goal[], onToggleTask: (id: str
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      <div style={{ flexShrink: 0, paddingTop: 8 }}>
+      <div style={{ flexShrink: 0 }}>
         <div style={{
-          padding: '0 20px 16px',
+          padding: '0 20px 0px',
           display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12,
         }}>
           <div style={{ minWidth: 0 }}>
@@ -68,7 +68,7 @@ const TasksList: React.FC<{ tasks: Task[], goals: Goal[], onToggleTask: (id: str
 
         <DateStrip selected={selected} onSelect={setSelected} />
 
-        <div style={{ padding: '14px 20px 18px' }}>
+        <div style={{ padding: '0px 20px 18px' }}>
           <ProgressBar
             value={total === 0 ? 0 : (done / total) * 100}
             color={done === total && total > 0 ? 'var(--success)' : 'var(--primary)'}

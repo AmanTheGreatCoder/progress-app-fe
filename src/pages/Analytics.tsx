@@ -398,7 +398,7 @@ const Analytics: React.FC = () => {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       <div style={{ flexShrink: 0 }}>
         {/* Header */}
-        <div style={{ padding: '8px 20px 18px' }}>
+        <div style={{ padding: '8px 20px 0px' }}>
           <div style={{ color: T.textSecondary, fontSize: 11.5, letterSpacing: 0.6, textTransform: 'uppercase', fontWeight: 700 }}>
             Overview
           </div>
@@ -411,7 +411,7 @@ const Analytics: React.FC = () => {
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-        <div style={{ padding: '18px 20px 0' }}>
+        <div style={{ padding: '0px 20px 0' }}>
           <DayPointsCard dayInfo={dayInfo} dateMeta={dateMeta} />
         </div>
 

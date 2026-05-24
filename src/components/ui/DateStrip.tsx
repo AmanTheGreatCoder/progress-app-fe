@@ -17,9 +17,9 @@ export const STRIP_DAYS = (() => {
   return days;
 })();
 
-export const DateStrip: React.FC<{ 
-  selected: string, 
-  onSelect: (k: string) => void 
+export const DateStrip: React.FC<{
+  selected: string,
+  onSelect: (k: string) => void
 }> = ({ selected, onSelect }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const todayRef = useRef<HTMLButtonElement>(null);
@@ -36,8 +36,7 @@ export const DateStrip: React.FC<{
     <div ref={scrollRef} style={{
       display: 'flex',
       gap: 8,
-      padding: '8px 20px 24px',
-      marginBottom: -16,
+      padding: '16px 0px 24px 0px',
       overflowX: 'auto',
       WebkitOverflowScrolling: 'touch' as any,
       scrollbarWidth: 'none' as any,

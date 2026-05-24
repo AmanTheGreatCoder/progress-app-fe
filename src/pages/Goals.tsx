@@ -415,9 +415,10 @@ const GoalsList: React.FC<{ goals: Goal[], onOpenGoal: (id: string) => void, onC
   const filtered = goals.filter(g => tab === 'active' ? !g.archived : g.archived);
 
   return (
-    <div style={{ padding: '8px 0 140px' }}>
+    <div style={{ padding: '0px 0 140px' }}>
       <div style={{
         padding: '8px 20px 20px',
+        paddingTop: '0',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
         <div>

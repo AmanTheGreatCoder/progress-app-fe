@@ -17,7 +17,7 @@ const Layout: React.FC = () => {
       {/* Top Bar for Sidebar toggle */}
       <div style={{
         display: 'flex', alignItems: 'center',
-        padding: '16px 20px 4px',
+        padding: '16px 20px 12px',
       }}>
         <button onClick={() => setSidebarOpen(true)} style={{
           background: 'transparent', border: 'none', cursor: 'pointer',
@@ -35,7 +35,7 @@ const Layout: React.FC = () => {
         <Outlet />
       </div>
       <BottomNav />
-      
+
       <Sidebar isOpen={isSidebarOpen} onClose={() => setSidebarOpen(false)} />
     </div>
   );

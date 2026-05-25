@@ -14,12 +14,13 @@ interface AppContextType {
   syncTickTick: () => void;
   updateGoal: (id: string, updates: any) => void;
   addGoal: (input: any) => void;
+  deleteGoal: (id: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const { goals, addGoal, updateGoal, logProgress, refetch: refetchGoals } = useGoals();
+  const { goals, addGoal, updateGoal, deleteGoal, logProgress, refetch: refetchGoals } = useGoals();
   const { tasks, refetch: refetchTasks } = useTasks();
 
   const toggleTask = async (id: string) => {
@@ -97,7 +98,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }));
 
   return (
-    <AppContext.Provider value={{ goals: mappedGoals, tasks: mappedTasks, toggleTask, addLog, saveTask, syncTickTick, updateGoal, addGoal }}>
+    <AppContext.Provider value={{ goals: mappedGoals, tasks: mappedTasks, toggleTask, addLog, saveTask, syncTickTick, updateGoal, addGoal, deleteGoal }}>
       {children}
     </AppContext.Provider>
   );

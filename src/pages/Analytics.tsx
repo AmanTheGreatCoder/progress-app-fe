@@ -108,8 +108,8 @@ const DayPointsCard = ({ dayInfo, dateMeta }: any) => {
           <div style={{ color: T.textSecondary, fontSize: 12, marginTop: 8 }}>
             {dayInfo.isFuture ? "Hasn't happened yet"
               : target === 0 ? 'No tasks for today'
-              : reached ? 'Daily goal reached'
-                : `${target - dayInfo.total} pts to daily goal`}
+                : reached ? 'Daily goal reached'
+                  : `${target - dayInfo.total} pts to daily goal`}
           </div>
         </div>
         <PointsRing pct={pct} color={accent}>
@@ -125,10 +125,10 @@ const DayPointsCard = ({ dayInfo, dateMeta }: any) => {
 
 const CategoryBreakdown = ({ dayInfo }: any) => {
   const byCat: Record<string, number> = {};
-  dayInfo.items.forEach((it: any) => { 
+  dayInfo.items.forEach((it: any) => {
     const pts = it.completedMin ? Math.round(it.points / 2) : it.done ? it.points : 0;
     if (pts > 0) {
-      byCat[it.category] = (byCat[it.category] || 0) + pts; 
+      byCat[it.category] = (byCat[it.category] || 0) + pts;
     }
   });
   const cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
@@ -246,12 +246,11 @@ const WeekChart = ({ weekDays, selectedKey, onSelectDay }: any) => {
   );
 };
 
-const EarnedTasksList = ({ items, goals }: any) => {
+const EarnedTasksList = ({ items }: any) => {
   if (items.length === 0) return null;
   return (
     <Card pad={0} style={{ overflow: 'hidden' }}>
       {items.map((it: any, i: number) => {
-        const g = goals.find((g: any) => g.id === it.goalId);
         const cat = T.cat[it.category] || T.textSecondary;
         const isDone = it.done || it.completedMin;
         const pts = it.completedMin ? Math.round(it.points / 2) : it.done ? it.points : 0;
@@ -270,12 +269,12 @@ const EarnedTasksList = ({ items, goals }: any) => {
             }}>
               {isDone && !it.completedMin && (
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                  <path d="M2 6l3 3 5-5" stroke={T.bg} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M2 6l3 3 5-5" stroke={T.bg} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               )}
               {it.completedMin && (
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                  <path d="M2 5l2.5 2.5 3.5-4" stroke={T.warning} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M2 5l2.5 2.5 3.5-4" stroke={T.warning} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               )}
             </div>

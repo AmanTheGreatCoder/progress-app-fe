@@ -44,6 +44,9 @@ export const Icon: React.FC<IconProps> = ({ name, size = 22, color, stroke = 1.7
     case 'x': return (<svg {...props}><path d="M6 6l12 12M18 6 6 18"/></svg>);
     case 'star': return (<svg {...props}><path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>);
     case 'menu': return (<svg {...props}><path d="M3 12h18M3 6h18M3 18h18"/></svg>);
+    case 'more-vertical': return (<svg {...props}><circle cx="12" cy="5" r="1.4" fill={c} stroke="none"/><circle cx="12" cy="12" r="1.4" fill={c} stroke="none"/><circle cx="12" cy="19" r="1.4" fill={c} stroke="none"/></svg>);
+    case 'trash': return (<svg {...props}><path d="M4 7h16M10 11v6M14 11v6M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12"/><path d="M9 7V4h6v3"/></svg>);
+    case 'unarchive': return (<svg {...props}><rect x="3.5" y="4.5" width="17" height="4" rx="1"/><path d="M5 8.5V19a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 19V8.5"/><path d="M10 14l2-2 2 2M12 12v5"/></svg>);
     default: return null;
   }
 };

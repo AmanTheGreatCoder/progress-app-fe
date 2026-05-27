@@ -5,9 +5,8 @@ import { useAppContext } from '../context/AppContext';
 import api from '../services/api';
 
 export const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
-  const { syncTickTick } = useAppContext();
+  const { syncTickTick, isSyncing } = useAppContext();
   const [ticktickStatus, setTicktickStatus] = React.useState<{ connected: boolean; expiresAt?: string } | null>(null);
-  const [syncing, setSyncing] = React.useState(false);
 
   React.useEffect(() => {
     if (isOpen) {
@@ -18,9 +17,8 @@ export const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
   }, [isOpen]);
 
   const handleSync = async () => {
-    setSyncing(true);
+    if (isSyncing) return;
     await syncTickTick();
-    setSyncing(false);
   };
 
   const handleConnect = async () => {
@@ -91,11 +89,22 @@ export const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
               </div>
             </div>
             {ticktickStatus?.connected ? (
-              <button onClick={handleSync} disabled={syncing} style={{
-                padding: '6px 12px', borderRadius: 8, background: 'var(--primary)', color: '#fff',
-                border: 'none', fontSize: 12, fontWeight: 600, cursor: syncing ? 'wait' : 'pointer'
+              <button onClick={handleSync} disabled={isSyncing} style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '7px 14px', borderRadius: 20,
+                background: isSyncing
+                  ? 'color-mix(in srgb, var(--primary) 60%, transparent)'
+                  : 'var(--primary)',
+                color: '#fff', border: 'none',
+                fontSize: 12, fontWeight: 600,
+                cursor: isSyncing ? 'default' : 'pointer',
+                transition: 'background 200ms',
+                minWidth: 72, justifyContent: 'center',
               }}>
-                {syncing ? 'Syncing' : 'Sync'}
+                <span className={isSyncing ? 'spin' : ''} style={{ display: 'inline-flex', alignItems: 'center' }}>
+                  <Icon name={isSyncing ? 'loader' : 'arrow-down'} size={13} color="#fff" stroke={2.2} />
+                </span>
+                {isSyncing ? 'Syncing…' : 'Sync now'}
               </button>
             ) : (
               <button onClick={handleConnect} style={{

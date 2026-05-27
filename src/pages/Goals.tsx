@@ -474,20 +474,6 @@ const GoalDetail: React.FC<{
         </div>
       </div>
 
-      {/* ── FAB: Log entry ────────────────────────────────────────────── */}
-      <button onClick={() => { setShowLogForm(true); setTimeout(() => document.querySelector<HTMLElement>('textarea')?.focus(), 80); }} style={{
-        position: 'fixed', bottom: 90, right: 20,
-        height: 52, paddingInline: 20,
-        borderRadius: 16,
-        background: 'var(--primary)', border: 'none', cursor: 'pointer',
-        display: 'inline-flex', alignItems: 'center', gap: 8,
-        boxShadow: '0 8px 24px rgba(124,106,247,0.42)',
-        zIndex: 50,
-      }}>
-        <Icon name="plus" size={20} color="#fff" stroke={2.5} />
-        <span style={{ color: '#fff', fontSize: 14, fontWeight: 700 }}>Log entry</span>
-      </button>
-
       {/* ── Delete confirmation modal ─────────────────────────────────── */}
       {showDeleteConfirm && (
         <div

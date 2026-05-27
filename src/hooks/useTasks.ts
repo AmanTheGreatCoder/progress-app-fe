@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { getLocalYMD } from '../utils/dateUtils';
 import api from '../services/api';
 
-export const useTasks = () => {
+export const useTasks = (date?: string) => {
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -11,7 +11,8 @@ export const useTasks = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.get('/tasks');
+      const targetDate = date || getLocalYMD();
+      const response = await api.get(`/tasks?date=${targetDate}`);
       const data = response.data;
 
       // Data from DB already has tags as array (backend parses it)
@@ -58,8 +59,9 @@ export const useTasks = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [date]); // re-create (and re-run via useEffect) whenever date changes
 
+  // fetchTasks is recreated whenever `date` changes (via useCallback dep), so this fires on date change
   useEffect(() => { fetchTasks(); }, [fetchTasks]);
 
   const deleteTask = useCallback(async (id: string) => {

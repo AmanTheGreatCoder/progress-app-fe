@@ -1,4 +1,4 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { Goal, Task, ManualLog } from '../types';
 import { useGoals } from '../hooks/useGoals';
@@ -12,16 +12,19 @@ interface AppContextType {
   addLog: (goalId: string, entry: ManualLog) => void;
   saveTask: (draft: Task) => void;
   syncTickTick: () => void;
+  isSyncing: boolean;
   updateGoal: (id: string, updates: any) => void;
   addGoal: (input: any) => void;
   deleteGoal: (id: string) => void;
+  refetchGoals: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { goals, addGoal, updateGoal, deleteGoal, logProgress, refetch: refetchGoals } = useGoals();
-  const { tasks, refetch: refetchTasks } = useTasks();
+  const [isSyncing, setIsSyncing] = useState(false);
+  const { tasks, refetch: refetchTasks } = useTasks(); // fetches today by default
 
   const toggleTask = async (id: string) => {
     const task = tasks.find(t => t.id === id);
@@ -46,12 +49,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const syncTickTick = async () => {
+    setIsSyncing(true);
     try {
       await api.post('/sync');
       refetchTasks();
       refetchGoals();
     } catch (e) {
       console.error(e);
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -98,7 +104,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }));
 
   return (
-    <AppContext.Provider value={{ goals: mappedGoals, tasks: mappedTasks, toggleTask, addLog, saveTask, syncTickTick, updateGoal, addGoal, deleteGoal }}>
+    <AppContext.Provider value={{ goals: mappedGoals, tasks: mappedTasks, toggleTask, addLog, saveTask, syncTickTick, isSyncing, updateGoal, addGoal, deleteGoal, refetchGoals }}>
       {children}
     </AppContext.Provider>
   );

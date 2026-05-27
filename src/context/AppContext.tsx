@@ -83,6 +83,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       taskTotal: g.total || 0,
       taskDone: g.done || 0,
       manualLogs: g.manualLogs || [],
+      // New series-based linking
+      linkedSeriesIds: g.linkedSeriesIds || [],
+      linkedSeries: g.linkedSeries || [],
+      // Legacy
       linkedRecurringNames: g.linkedRecurringNames || [],
     };
   });

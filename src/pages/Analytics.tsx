@@ -6,6 +6,7 @@ import { Icon } from '../components/ui/Icon';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { useAppContext } from '../context/AppContext';
 import { DAY_NAMES, MONTH_NAMES, addDays, getLocalYMD, todayDate } from '../utils/dateUtils';
+import api from '../services/api';
 
 const T = {
   bg: 'var(--bg, #0F0F14)',
@@ -165,7 +166,8 @@ const CategoryBreakdown = ({ dayInfo }: any) => {
 };
 
 const WeekChart = ({ weekDays, selectedKey, onSelectDay }: any) => {
-  const maxPts = Math.max(10, ...weekDays.map((d: any) => d.points), ...weekDays.map((d: any) => d.target));
+  // Scale only by actual earned points — target dashes are removed (stats row shows Goals Hit instead)
+  const maxPts = Math.max(10, ...weekDays.map((d: any) => d.points));
   return (
     <div>
       <div style={{ position: 'relative', height: 132, marginBottom: 10, paddingTop: 10 }}>
@@ -179,7 +181,6 @@ const WeekChart = ({ weekDays, selectedKey, onSelectDay }: any) => {
             const isSelected = d.key === selectedKey;
             const reached = d.target > 0 && d.points >= d.target;
             const h = d.isFuture ? 3 : Math.max(3, (d.points / maxPts) * 100);
-            const targetH = d.target > 0 ? (d.target / maxPts) * 100 : 0;
             const color = d.isFuture ? T.surface2
               : reached ? T.success
                 : T.primary;
@@ -189,21 +190,10 @@ const WeekChart = ({ weekDays, selectedKey, onSelectDay }: any) => {
                 height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
                 position: 'relative',
               }}>
-                {/* target dash */}
-                {d.target > 0 && (
-                  <div style={{
-                    position: 'absolute', left: '15%', right: '15%',
-                    bottom: `calc(${targetH}% - 1px)`, height: 2,
-                    background: T.textSecondary,
-                    borderRadius: 1,
-                    zIndex: 2,
-                    opacity: 0.8
-                  }} />
-                )}
                 {/* hover value */}
                 {isSelected && !d.isFuture && (
                   <span style={{
-                    position: 'absolute', bottom: `calc(${Math.max(h, targetH)}% + 6px)`,
+                    position: 'absolute', bottom: `calc(${h}% + 6px)`,
                     left: '50%', transform: 'translateX(-50%)',
                     fontSize: 10.5, fontWeight: 700, color: T.textPrimary,
                     fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap',
@@ -319,17 +309,47 @@ const EarnedTasksList = ({ items }: any) => {
 // OVERVIEW SCREEN (Replaces Analytics)
 // ──────────────────────────────────────────────────────────────
 const Analytics: React.FC = () => {
-  const { tasks, goals } = useAppContext();
+  const { goals } = useAppContext();
   const todayKey = STRIP_DAYS.find(d => d.offset === 0)?.key || TODAY;
   const [selectedDate, setSelectedDate] = useState(todayKey);
   const [weekOffset, setWeekOffset] = useState(0);
+  const [weekTasks, setWeekTasks] = useState<any[]>([]);
 
   const dateMeta = STRIP_DAYS.find(d => d.key === selectedDate) || STRIP_DAYS[3];
+
+  // ── Compute week bounds (needed before useEffect) ──────────────────────────
+  const tDate = todayDate();
+  const dow = tDate.getDay();
+  const daysToMonday = (dow + 6) % 7;
+  const currentMonday = addDays(tDate, -daysToMonday);
+  const startMonday = addDays(currentMonday, weekOffset * 7);
+  const endDay = addDays(startMonday, 6);
+
+  // ── Fetch tasks for the visible week whenever weekOffset changes ────────────
+  // Range: one extra week back (for the "vs last" delta) + a few days forward
+  // (for the DateStrip which shows ±3 days from today).
+  // The backend supports ?from=YYYY-MM-DD&to=YYYY-MM-DD.
+  useEffect(() => {
+    const from = getLocalYMD(addDays(startMonday, -7));
+    const to   = getLocalYMD(addDays(endDay, 4));
+    api.get(`/tasks?from=${from}&to=${to}`).then(res => {
+      // Backend returns raw DB shape; map to the shape getDayPoints expects.
+      const mapped = (res.data as any[]).map(t => ({
+        ...t,
+        title: t.name,
+        due:   t.date,       // already YYYY-MM-DD — dueToKey passes it through
+        done:  t.completed || false,
+        goalId: '',
+        source: 'Notion',
+      }));
+      setWeekTasks(mapped);
+    }).catch(console.error);
+  }, [weekOffset]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const getDayPoints = (dateKey: string) => {
     const d = new Date(dateKey + 'T00:00:00');
 
-    const dayTasks = tasks.filter(t => {
+    const dayTasks = weekTasks.filter(t => {
       const k = dueToKey(t.due) || t.due;
       return k === dateKey;
     });
@@ -367,12 +387,6 @@ const Analytics: React.FC = () => {
 
   const dayInfo = getDayPoints(selectedDate);
 
-  const tDate = todayDate();
-  const dow = tDate.getDay();
-  const daysToMonday = (dow + 6) % 7;
-  const currentMonday = addDays(tDate, -daysToMonday);
-  const startMonday = addDays(currentMonday, weekOffset * 7);
-
   const weekDays = useMemo(() => {
     const arr = [];
     for (let i = 0; i < 7; i++) {
@@ -391,9 +405,7 @@ const Analytics: React.FC = () => {
       });
     }
     return arr;
-  }, [weekOffset, tasks, goals]);
-
-  const endDay = addDays(startMonday, 6);
+  }, [weekOffset, weekTasks, goals]); // eslint-disable-line react-hooks/exhaustive-deps
   const sameMonth = startMonday.getMonth() === endDay.getMonth();
   const weekRange = sameMonth
     ? `${MONTH_NAMES[startMonday.getMonth()]} ${startMonday.getDate()} – ${endDay.getDate()}`
@@ -413,7 +425,7 @@ const Analytics: React.FC = () => {
       s += getDayPoints(fmtKey(d)).total;
     }
     return s;
-  }, [weekOffset, tasks, goals]);
+  }, [weekOffset, weekTasks, goals]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const delta = weekTotal - prevWeekTotal;
   const canForward = weekOffset < 0;

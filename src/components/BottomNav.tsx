@@ -19,7 +19,7 @@ export const BottomNav: React.FC = () => {
     { id: 'dashboard', path: '/', label: 'Home', icon: 'home' },
     { id: 'goals', path: '/goals', label: 'Goals', icon: 'target' },
     { id: 'tasks', path: '/tasks', label: 'Tasks', icon: 'tasks' },
-    { id: 'profile', path: '/analytics', label: 'You', icon: 'user' },
+    { id: 'profile', path: '/analytics', label: 'Analytics', icon: 'trend' },
   ];
 
   const isSubScreen = location.search.includes('create=') || location.search.includes('id=');

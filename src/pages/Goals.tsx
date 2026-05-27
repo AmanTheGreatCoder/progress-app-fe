@@ -5,7 +5,7 @@ import { Icon } from '../components/ui/Icon';
 import { Pill } from '../components/ui/Pill';
 import { GoalRow, goalPct, goalDaysLeft } from '../components/ui/GoalRow';
 import { TaskRow } from '../components/ui/TaskRow';
-import type { Goal, Task, ManualLog } from '../types';
+import type { Goal, Task, ManualLog, TaskSeriesSummary } from '../types';
 import api from '../services/api';
 
 const priorityMeta: Record<string, { color: string, label: string }> = {
@@ -29,7 +29,9 @@ const GoalDetail: React.FC<{
   const pct = goalPct(goal);
   const catColor = `var(--c-${goal.category.toLowerCase()})`;
   const days = goalDaysLeft(goal);
-  const linkedTasks = tasks.filter(t => goal.linkedRecurringNames?.includes(t.title));
+
+  // Series currently linked to this goal (from the join table)
+  const linkedSeries: TaskSeriesSummary[] = goal.linkedSeries || [];
 
   const [showOverflow, setShowOverflow] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -38,8 +40,12 @@ const GoalDetail: React.FC<{
   const [minutes, setMinutes] = useState('30');
   const [note, setNote] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [seriesNames, setSeriesNames] = useState<string[]>([]);
+  // All available series from /api/tasks/series (shape: {id, name, tags, firstSeen, lastSeen, taskCount})
+  const [seriesItems, setSeriesItems] = useState<TaskSeriesSummary[]>([]);
   const [ringPct, setRingPct] = useState(0);
+  // Accordion: which series card is expanded + its lazily-loaded instances
+  const [expandedSeriesId, setExpandedSeriesId] = useState<string | null>(null);
+  const [seriesInstances, setSeriesInstances] = useState<Record<string, any[]>>({});
   const overflowRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -48,7 +54,7 @@ const GoalDetail: React.FC<{
   }, [pct]);
 
   useEffect(() => {
-    api.get('/tasks/series').then(res => setSeriesNames(res.data)).catch(() => { });
+    api.get('/tasks/series').then(res => setSeriesItems(res.data)).catch(() => { });
   }, []);
 
   // Close overflow menu on outside click
@@ -248,16 +254,16 @@ const GoalDetail: React.FC<{
         {/* ── Section divider ──────────────────────────────────────────── */}
         <div style={{ height: 6, background: 'var(--surface)', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }} />
 
-        {/* ── Linked Tasks ─────────────────────────────────────────────── */}
+        {/* ── Linked Series ────────────────────────────────────────────── */}
         <div style={{ padding: '18px 20px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ color: 'var(--text-secondary)', fontSize: 11, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase' }}>
-              Linked Tasks
+              Linked Series
             </span>
             <span style={{
               fontSize: 11, fontWeight: 700, padding: '2px 7px', borderRadius: 10,
               background: 'var(--surface2)', color: 'var(--text-tertiary)',
-            }}>{linkedTasks.length}</span>
+            }}>{linkedSeries.length}</span>
           </div>
           <button onClick={() => setShowLinkMenu(s => !s)} style={{
             display: 'inline-flex', alignItems: 'center', gap: 5,
@@ -274,7 +280,7 @@ const GoalDetail: React.FC<{
         </div>
 
         <div style={{ padding: '0 20px 20px' }}>
-          {/* Link menu */}
+          {/* ── Series picker ─────────────────────────────────────────── */}
           {showLinkMenu && (
             <div style={{
               background: 'var(--surface)', border: '1px solid var(--border)',
@@ -295,41 +301,81 @@ const GoalDetail: React.FC<{
                   style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: 'var(--text-primary)', fontSize: 14 }}
                 />
               </div>
-              <div style={{ maxHeight: 200, overflowY: 'auto' }}>
-                {seriesNames.filter(t => t.toLowerCase().includes(searchQuery.toLowerCase())).map((title, idx, arr) => {
-                  const isLinked = goal.linkedRecurringNames?.includes(title);
-                  return (
-                    <div key={title} style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '11px 0', borderBottom: idx < arr.length - 1 ? '1px solid var(--border)' : 'none',
-                    }}>
-                      <span style={{ color: 'var(--text-primary)', fontSize: 14, flex: 1, marginRight: 8 }}>{title}</span>
-                      <button onClick={() => {
-                        const newLinked = isLinked
-                          ? (goal.linkedRecurringNames || []).filter(n => n !== title)
-                          : [...(goal.linkedRecurringNames || []), title];
-                        onUpdateGoal(goal.id, { linkedRecurringNames: newLinked });
-                      }} style={{
-                        padding: '5px 14px', borderRadius: 20, flexShrink: 0,
-                        background: isLinked ? 'var(--surface2)' : 'var(--primary)',
-                        color: isLinked ? 'var(--text-secondary)' : '#fff',
-                        border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600,
+              <div style={{ maxHeight: 260, overflowY: 'auto' }}>
+                {(() => {
+                  const q = searchQuery.toLowerCase();
+                  const filtered = seriesItems.filter(s => s.name.toLowerCase().includes(q));
+                  if (filtered.length === 0) {
+                    return (
+                      <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--text-secondary)', fontSize: 13 }}>
+                        {seriesItems.length === 0
+                          ? 'No recurring tasks found. Sync your tasks first.'
+                          : 'No tasks match your search.'}
+                      </div>
+                    );
+                  }
+                  return filtered.map((series, idx, arr) => {
+                    const isLinked = (goal.linkedSeriesIds || []).includes(series.id);
+                    return (
+                      <div key={series.id} style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '12px 0',
+                        borderBottom: idx < arr.length - 1 ? '1px solid var(--border)' : 'none',
+                        gap: 10,
                       }}>
-                        {isLinked ? 'Unlink' : 'Link'}
-                      </button>
-                    </div>
-                  );
-                })}
-                {seriesNames.filter(t => t.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
-                  <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--text-secondary)', fontSize: 13 }}>
-                    No tasks found
-                  </div>
-                )}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                            <span style={{
+                              color: 'var(--text-primary)', fontSize: 14, fontWeight: 500,
+                              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                            }}>{series.name}</span>
+                            {series.taskCount > 1 && (
+                              <span style={{
+                                fontSize: 11, fontWeight: 700, padding: '1px 7px', borderRadius: 8,
+                                background: 'color-mix(in srgb, var(--warning) 14%, transparent)',
+                                color: 'var(--warning)', flexShrink: 0,
+                              }}>×{series.taskCount}</span>
+                            )}
+                          </div>
+                          {series.tags.length > 0 && (
+                            <div style={{ display: 'flex', gap: 4, marginTop: 5, flexWrap: 'wrap' }}>
+                              {series.tags.slice(0, 4).map(tag => (
+                                <span key={tag} style={{
+                                  fontSize: 10, padding: '2px 7px', borderRadius: 6,
+                                  background: 'var(--surface2)', color: 'var(--text-secondary)',
+                                  border: '1px solid var(--border)',
+                                }}>{tag}</span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <button onClick={() => {
+                          const newIds = isLinked
+                            ? (goal.linkedSeriesIds || []).filter(id => id !== series.id)
+                            : [...(goal.linkedSeriesIds || []), series.id];
+                          onUpdateGoal(goal.id, { linkedSeriesIds: newIds });
+                        }} style={{
+                          padding: '6px 14px', borderRadius: 20, flexShrink: 0,
+                          background: isLinked
+                            ? 'color-mix(in srgb, var(--success) 14%, transparent)'
+                            : 'var(--primary)',
+                          color: isLinked ? 'var(--success)' : '#fff',
+                          border: isLinked ? '1px solid color-mix(in srgb, var(--success) 30%, transparent)' : 'none',
+                          cursor: 'pointer', fontSize: 12, fontWeight: 700,
+                          display: 'inline-flex', alignItems: 'center', gap: 4,
+                        }}>
+                          {isLinked ? '✓ Linked' : 'Link'}
+                        </button>
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             </div>
           )}
 
-          {linkedTasks.length === 0 ? (
+          {/* ── Linked series cards ───────────────────────────────────── */}
+          {linkedSeries.length === 0 ? (
             <div style={{
               padding: '28px 16px', textAlign: 'center',
               background: 'var(--surface)', borderRadius: 16,
@@ -337,7 +383,7 @@ const GoalDetail: React.FC<{
             }}>
               <Icon name="link" size={24} color="var(--text-tertiary)" style={{ display: 'inline-block' }} />
               <div style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 10 }}>
-                No tasks linked to this goal yet.
+                No series linked to this goal yet.
               </div>
               <button onClick={() => setShowLinkMenu(true)} style={{
                 marginTop: 12, padding: '7px 18px', borderRadius: 20,
@@ -348,11 +394,146 @@ const GoalDetail: React.FC<{
             </div>
           ) : (
             <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
-              {linkedTasks.slice(0, 5).map((t, i, arr) => (
-                <div key={t.id} style={{ borderBottom: i === arr.length - 1 ? 'none' : '1px solid var(--border)' }}>
-                  <TaskRow task={t} goal={goal} onToggle={() => onToggleTask(t.id)} />
-                </div>
-              ))}
+              {linkedSeries.map((s, i, arr) => {
+                const isExpanded = expandedSeriesId === s.id;
+                const instances: any[] = seriesInstances[s.id] || [];
+                const doneCount = instances.filter((t: any) => t.completed || t.completedMin).length;
+                const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+                const handleToggle = async () => {
+                  const opening = expandedSeriesId !== s.id;
+                  setExpandedSeriesId(opening ? s.id : null);
+                  if (opening && !seriesInstances[s.id]) {
+                    try {
+                      const res = await api.get('/tasks', {
+                        params: { name: s.name, from: goal.start, to: goal.end },
+                      });
+                      setSeriesInstances(prev => ({ ...prev, [s.id]: res.data }));
+                    } catch {
+                      setSeriesInstances(prev => ({ ...prev, [s.id]: [] }));
+                    }
+                  }
+                };
+
+                return (
+                  <div key={s.id} style={{ borderBottom: i < arr.length - 1 ? '1px solid var(--border)' : 'none' }}>
+
+                    {/* ── Series header row — tap to expand ── */}
+                    <div onClick={handleToggle} style={{
+                      padding: '14px 16px',
+                      display: 'flex', alignItems: 'center', gap: 12,
+                      cursor: 'pointer',
+                      background: isExpanded
+                        ? 'color-mix(in srgb, var(--primary) 6%, transparent)'
+                        : 'transparent',
+                      transition: 'background 150ms',
+                    }}>
+                      {/* Repeat icon */}
+                      <div style={{
+                        width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                        background: 'color-mix(in srgb, var(--primary) 14%, transparent)',
+                        display: 'grid', placeItems: 'center',
+                      }}>
+                        <Icon name="repeat" size={17} color="var(--primary)" />
+                      </div>
+
+                      {/* Name + subtitle */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ color: 'var(--text-primary)', fontSize: 14, fontWeight: 600 }}>{s.name}</div>
+                        <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginTop: 2 }}>
+                          {isExpanded && instances.length > 0
+                            ? `${doneCount} / ${instances.length} done in range`
+                            : `${s.taskCount} instances · last ${s.lastSeen ? s.lastSeen.slice(5).replace('-', '/') : '—'}`}
+                        </div>
+                      </div>
+
+                      {/* Tags */}
+                      {s.tags.slice(0, 2).map(tag => (
+                        <span key={tag} style={{
+                          fontSize: 10, padding: '2px 7px', borderRadius: 6, flexShrink: 0,
+                          background: 'var(--surface2)', color: 'var(--text-secondary)',
+                          border: '1px solid var(--border)',
+                        }}>{tag}</span>
+                      ))}
+
+                      {/* Chevron */}
+                      <div style={{
+                        flexShrink: 0,
+                        transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                        transition: 'transform 200ms ease',
+                        display: 'grid', placeItems: 'center',
+                      }}>
+                        <Icon name="chevron-down" size={16} color="var(--text-tertiary)" />
+                      </div>
+                    </div>
+
+                    {/* ── Expanded: instances list ── */}
+                    {isExpanded && (
+                      <div style={{
+                        borderTop: '1px solid var(--border)',
+                        background: 'var(--bg)',
+                        maxHeight: 300,
+                        overflowY: 'auto',
+                      }}>
+                        {instances.length === 0 ? (
+                          <div style={{
+                            padding: '20px 16px', textAlign: 'center',
+                            color: 'var(--text-secondary)', fontSize: 13,
+                          }}>
+                            No instances in this goal's date range.
+                          </div>
+                        ) : instances.map((t: any, idx: number) => {
+                          const done    = t.completed;
+                          const minOnly = !t.completed && t.completedMin;
+                          const pending = !t.completed && !t.completedMin;
+
+                          const dotColor    = done ? 'var(--success)' : minOnly ? 'var(--warning)' : 'var(--border)';
+                          const chipLabel   = done ? 'Done' : minOnly ? 'Min' : '—';
+                          const chipColor   = done ? 'var(--success)' : minOnly ? 'var(--warning)' : 'var(--text-tertiary)';
+
+                          const [, mm, dd] = t.date.split('-');
+                          const dateLabel  = `${months[parseInt(mm, 10) - 1]} ${parseInt(dd, 10)}`;
+
+                          return (
+                            <div key={t.id} style={{
+                              display: 'flex', alignItems: 'center', gap: 12,
+                              padding: '9px 16px',
+                              borderBottom: idx < instances.length - 1
+                                ? '1px solid color-mix(in srgb, var(--border) 50%, transparent)'
+                                : 'none',
+                              opacity: pending ? 0.55 : 1,
+                            }}>
+                              {/* Status dot */}
+                              <div style={{
+                                width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+                                background: dotColor,
+                                boxShadow: done ? `0 0 5px ${dotColor}` : 'none',
+                              }} />
+
+                              {/* Date */}
+                              <span style={{
+                                fontSize: 13, fontWeight: 600,
+                                color: 'var(--text-primary)',
+                                minWidth: 50, flexShrink: 0,
+                              }}>{dateLabel}</span>
+
+                              <div style={{ flex: 1 }} />
+
+                              {/* Status chip */}
+                              <span style={{
+                                fontSize: 11, fontWeight: 700,
+                                color: chipColor,
+                                padding: '2px 8px', borderRadius: 8,
+                                background: `color-mix(in srgb, ${chipColor} 13%, transparent)`,
+                              }}>{chipLabel}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

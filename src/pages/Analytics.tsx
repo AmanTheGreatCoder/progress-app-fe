@@ -364,7 +364,7 @@ const Analytics: React.FC = () => {
       let cat = g ? g.category : 'Other';
       const cats = ['Health', 'Career', 'Learning', 'Wellness', 'Finance', 'Routine', 'Work', 'Personal'];
       for (const c of cats) {
-        if (t.tags.map(tag => tag.toLowerCase()).includes(c.toLowerCase())) {
+        if (t.tags.map((tag: string) => tag.toLowerCase()).includes(c.toLowerCase())) {
           cat = c;
           break;
         }

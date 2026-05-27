@@ -4,7 +4,6 @@ import { useAppContext } from '../context/AppContext';
 import { Icon } from '../components/ui/Icon';
 import { Pill } from '../components/ui/Pill';
 import { GoalRow, goalPct, goalDaysLeft } from '../components/ui/GoalRow';
-import { TaskRow } from '../components/ui/TaskRow';
 import type { Goal, Task, ManualLog, TaskSeriesSummary } from '../types';
 import api from '../services/api';
 
@@ -25,7 +24,7 @@ const GoalDetail: React.FC<{
   onAddLog: (goalId: string, log: ManualLog) => void,
   onUpdateGoal: (id: string, updates: any) => void,
   onDeleteGoal: (id: string) => void,
-}> = ({ goal, tasks, onBack, onEdit, onToggleTask, onAddLog, onUpdateGoal, onDeleteGoal }) => {
+}> = ({ goal, onBack, onEdit, onAddLog, onUpdateGoal, onDeleteGoal }) => {
   const pct = goalPct(goal);
   const catColor = `var(--c-${goal.category.toLowerCase()})`;
   const days = goalDaysLeft(goal);

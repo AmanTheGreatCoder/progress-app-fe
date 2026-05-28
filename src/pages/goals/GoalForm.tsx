@@ -21,145 +21,139 @@ interface GoalFormProps {
 
 export const GoalForm: React.FC<GoalFormProps> = ({ initialGoal, onBack, onSave }) => {
   const [draft, setDraft] = useState<GoalFormDraft>({
-    title: initialGoal?.title || '',
-    category: (initialGoal?.category as Category) || 'Health',
-    priority: (initialGoal?.priority as Priority) || 'Medium',
-    startDate: initialGoal?.start || new Date().toISOString().slice(0, 10),
-    deadline: initialGoal?.end || new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
+    title:           initialGoal?.title     || '',
+    category:        (initialGoal?.category as Category) || 'Health',
+    priority:        (initialGoal?.priority as Priority) || 'Medium',
+    startDate:       initialGoal?.start     || new Date().toISOString().slice(0, 10),
+    deadline:        initialGoal?.end       || new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
     targetFrequency: 5,
   });
 
   const canSave = draft.title.trim().length > 0;
 
   return (
-    <div className="slide-in-right" style={{ padding: '0 0 100px', position: 'fixed', inset: 0, zIndex: 100, background: 'var(--bg)', overflowY: 'auto' }}>
-      <div className="flex items-center justify-between" style={{ padding: '8px 16px 12px' }}>
+    <div
+      className="slide-in-right fixed inset-0 z-[100] bg-c-bg overflow-y-auto pb-24"
+    >
+      {/* ── App bar ──────────────────────────────────────────────── */}
+      <div className="flex items-center justify-between px-4 py-2 pb-3">
         <button
           onClick={onBack}
           aria-label="Close form"
-          style={{
-            width: 40, height: 40, borderRadius: 12,
-            background: 'transparent', border: 'none',
-            display: 'grid', placeItems: 'center', cursor: 'pointer',
-          }}
+          className="w-10 h-10 rounded-xl bg-transparent border-none grid place-items-center cursor-pointer"
         >
           <Icon name="x" size={22} color="var(--text-primary)" />
         </button>
-        <span style={{ color: 'var(--text-primary)', fontSize: 16, fontWeight: 600 }}>
+
+        <span className="text-lg font-semibold text-c-text1">
           {initialGoal ? 'Edit Goal' : 'New Goal'}
         </span>
+
         <button
           onClick={() => { if (canSave) onSave(draft); }}
-          style={{
-            padding: '8px 16px', borderRadius: 10,
-            background: 'var(--primary)', border: 'none', color: '#fff',
-            fontSize: 13, fontWeight: 600, cursor: canSave ? 'pointer' : 'default',
-            opacity: canSave ? 1 : 0.5,
-          }}
+          className={[
+            'px-4 py-2 rounded-[10px] bg-c-primary border-none text-white text-sm font-semibold',
+            canSave ? 'cursor-pointer opacity-100' : 'cursor-default opacity-50',
+          ].join(' ')}
         >
           {initialGoal ? 'Save' : 'Create'}
         </button>
       </div>
 
-      <div style={{ padding: '20px' }}>
+      {/* ── Fields ───────────────────────────────────────────────── */}
+      <div className="px-5 flex flex-col gap-5">
+
         {/* Title */}
-        <div style={{ marginBottom: 20 }}>
-          <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', marginBottom: 8, letterSpacing: 0.5 }}>
+        <div>
+          <label className="block text-2xs font-bold text-c-text2 uppercase tracking-label mb-2">
             Goal Title
           </label>
           <input
             value={draft.title}
             onChange={e => setDraft({ ...draft, title: e.target.value })}
             placeholder="E.g., Read 10 books"
-            style={{
-              width: '100%', padding: '14px 16px', borderRadius: 12, border: '1px solid var(--border)',
-              background: 'var(--surface)', color: 'var(--text-primary)', fontSize: 16, outline: 'none',
-              boxSizing: 'border-box',
-            }}
+            className="w-full px-4 py-3.5 rounded-xl border border-c-border bg-c-surface text-c-text1 text-lg outline-none box-border"
           />
         </div>
 
         {/* Category */}
-        <div style={{ marginBottom: 20 }}>
-          <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', marginBottom: 8, letterSpacing: 0.5 }}>
+        <div>
+          <label className="block text-2xs font-bold text-c-text2 uppercase tracking-label mb-2">
             Category
           </label>
           <div className="flex flex-wrap gap-2">
-            {CATEGORIES.map(c => (
-              <button
-                key={c}
-                onClick={() => setDraft({ ...draft, category: c })}
-                style={{
-                  padding: '10px 14px', borderRadius: 10,
-                  border: `1px solid ${draft.category === c ? 'var(--primary)' : 'var(--border)'}`,
-                  background: draft.category === c ? 'color-mix(in srgb, var(--primary) 15%, transparent)' : 'var(--surface)',
-                  color: draft.category === c ? 'var(--primary)' : 'var(--text-primary)',
-                  fontWeight: 600, cursor: 'pointer',
-                }}
-              >
-                {c}
-              </button>
-            ))}
+            {CATEGORIES.map(c => {
+              const isSelected = draft.category === c;
+              return (
+                <button
+                  key={c}
+                  onClick={() => setDraft({ ...draft, category: c })}
+                  className={[
+                    'px-3.5 py-2.5 rounded-[10px] font-semibold cursor-pointer border text-sm',
+                    isSelected
+                      ? 'border-c-primary bg-primary-soft text-c-primary'
+                      : 'border-c-border bg-c-surface text-c-text1',
+                  ].join(' ')}
+                >
+                  {c}
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {/* Priority */}
-        <div style={{ marginBottom: 20 }}>
-          <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', marginBottom: 8, letterSpacing: 0.5 }}>
+        <div>
+          <label className="block text-2xs font-bold text-c-text2 uppercase tracking-label mb-2">
             Priority
           </label>
           <div className="flex gap-2">
-            {PRIORITIES.map(p => (
-              <button
-                key={p}
-                onClick={() => setDraft({ ...draft, priority: p })}
-                style={{
-                  padding: '10px 14px', borderRadius: 10,
-                  border: `1px solid ${draft.priority === p ? 'var(--primary)' : 'var(--border)'}`,
-                  background: draft.priority === p ? 'color-mix(in srgb, var(--primary) 15%, transparent)' : 'var(--surface)',
-                  color: draft.priority === p ? 'var(--primary)' : 'var(--text-primary)',
-                  fontWeight: 600, cursor: 'pointer',
-                }}
-              >
-                {p}
-              </button>
-            ))}
+            {PRIORITIES.map(p => {
+              const isSelected = draft.priority === p;
+              return (
+                <button
+                  key={p}
+                  onClick={() => setDraft({ ...draft, priority: p })}
+                  className={[
+                    'px-3.5 py-2.5 rounded-[10px] font-semibold cursor-pointer border text-sm',
+                    isSelected
+                      ? 'border-c-primary bg-primary-soft text-c-primary'
+                      : 'border-c-border bg-c-surface text-c-text1',
+                  ].join(' ')}
+                >
+                  {p}
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {/* Date range */}
-        <div className="flex gap-3" style={{ marginBottom: 20 }}>
+        <div className="flex gap-3">
           <div className="flex-1">
-            <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', marginBottom: 8, letterSpacing: 0.5 }}>
+            <label className="block text-2xs font-bold text-c-text2 uppercase tracking-label mb-2">
               Start Date
             </label>
             <input
               type="date"
               value={draft.startDate}
               onChange={e => setDraft({ ...draft, startDate: e.target.value })}
-              style={{
-                width: '100%', padding: '12px', borderRadius: 12, border: '1px solid var(--border)',
-                background: 'var(--surface)', color: 'var(--text-primary)', fontSize: 14, outline: 'none',
-                boxSizing: 'border-box',
-              }}
+              className="w-full px-3 py-3 rounded-xl border border-c-border bg-c-surface text-c-text1 text-base outline-none box-border"
             />
           </div>
           <div className="flex-1">
-            <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', marginBottom: 8, letterSpacing: 0.5 }}>
+            <label className="block text-2xs font-bold text-c-text2 uppercase tracking-label mb-2">
               Deadline
             </label>
             <input
               type="date"
               value={draft.deadline}
               onChange={e => setDraft({ ...draft, deadline: e.target.value })}
-              style={{
-                width: '100%', padding: '12px', borderRadius: 12, border: '1px solid var(--border)',
-                background: 'var(--surface)', color: 'var(--text-primary)', fontSize: 14, outline: 'none',
-                boxSizing: 'border-box',
-              }}
+              className="w-full px-3 py-3 rounded-xl border border-c-border bg-c-surface text-c-text1 text-base outline-none box-border"
             />
           </div>
         </div>
+
       </div>
     </div>
   );

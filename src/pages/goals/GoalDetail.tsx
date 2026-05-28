@@ -19,25 +19,27 @@ interface GoalDetailProps {
   onDeleteGoal: (id: string) => void;
 }
 
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
 export const GoalDetail: React.FC<GoalDetailProps> = ({
   goal, onBack, onEdit, onAddLog, onUpdateGoal, onDeleteGoal,
 }) => {
-  const pct = goalPct(goal);
-  const catColor = `var(--c-${goal.category.toLowerCase()})`;
-  const days = goalDaysLeft(goal);
+  const pct        = goalPct(goal);
+  const catColor   = `var(--c-${goal.category.toLowerCase()})`;  // runtime per goal — stays inline
+  const days       = goalDaysLeft(goal);
   const linkedSeries: TaskSeriesSummary[] = goal.linkedSeries || [];
 
-  const [showOverflow, setShowOverflow] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showLogForm, setShowLogForm] = useState(false);
-  const [showLinkMenu, setShowLinkMenu] = useState(false);
-  const [minutes, setMinutes] = useState('30');
-  const [note, setNote] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [seriesItems, setSeriesItems] = useState<TaskSeriesSummary[]>([]);
-  const [ringPct, setRingPct] = useState(0);
+  const [showOverflow,     setShowOverflow]     = useState(false);
+  const [showDeleteConfirm,setShowDeleteConfirm] = useState(false);
+  const [showLogForm,      setShowLogForm]      = useState(false);
+  const [showLinkMenu,     setShowLinkMenu]     = useState(false);
+  const [minutes,          setMinutes]          = useState('30');
+  const [note,             setNote]             = useState('');
+  const [searchQuery,      setSearchQuery]      = useState('');
+  const [seriesItems,      setSeriesItems]      = useState<TaskSeriesSummary[]>([]);
+  const [ringPct,          setRingPct]          = useState(0);
   const [expandedSeriesId, setExpandedSeriesId] = useState<string | null>(null);
-  const [seriesInstances, setSeriesInstances] = useState<Record<string, Record<string, unknown>[]>>({});
+  const [seriesInstances,  setSeriesInstances]  = useState<Record<string, Record<string, unknown>[]>>({});
   const overflowRef = useRef<HTMLDivElement>(null);
 
   const R = 56;
@@ -88,74 +90,54 @@ export const GoalDetail: React.FC<GoalDetailProps> = ({
   };
 
   const prioColor = PRIORITY_META[goal.priority as keyof typeof PRIORITY_META]?.color || 'var(--text-secondary)';
-  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
+    <div className="fixed inset-0 z-[100] bg-c-bg flex flex-col">
 
-      {/* App Bar */}
-      <div className="flex items-center" style={{
-        height: 58, padding: '0 4px',
-        background: 'var(--surface)',
-        borderBottom: '1px solid var(--border)',
-        flexShrink: 0, position: 'relative',
-      }}>
+      {/* ── App bar ──────────────────────────────────────────────── */}
+      <div
+        className="flex items-center flex-shrink-0 relative bg-c-surface border-b border-c-border"
+        style={{ height: 58, padding: '0 4px' }}
+      >
         <button
           onClick={onBack}
           aria-label="Go back"
-          style={{
-            width: 48, height: 48, borderRadius: 24,
-            background: 'none', border: 'none', cursor: 'pointer',
-            display: 'grid', placeItems: 'center', flexShrink: 0,
-          }}
+          className="w-12 h-12 rounded-full bg-transparent border-none cursor-pointer grid place-items-center flex-shrink-0"
         >
           <Icon name="arrow-left" size={22} color="var(--text-primary)" />
         </button>
-        <div className="flex-1 overflow-hidden" style={{ padding: '0 4px' }}>
-          <div style={{
-            color: 'var(--text-primary)', fontSize: 17, fontWeight: 700,
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-          }}>{goal.title}</div>
-          <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginTop: 1 }}>
+
+        <div className="flex-1 overflow-hidden px-1">
+          <div className="text-lg font-bold text-c-text1 truncate">{goal.title}</div>
+          <div className="text-xs text-c-text2 mt-px">
             {goal.category} · {goal.archived ? 'Archived' : days > 0 ? `${days}d left` : 'Ended'}
           </div>
         </div>
-        <div ref={overflowRef} style={{ position: 'relative', flexShrink: 0 }}>
+
+        <div ref={overflowRef} className="relative flex-shrink-0">
           <button
             onClick={() => setShowOverflow(s => !s)}
             aria-label="More options"
-            style={{
-              width: 48, height: 48, borderRadius: 24,
-              background: 'none', border: 'none', cursor: 'pointer',
-              display: 'grid', placeItems: 'center',
-            }}
+            className="w-12 h-12 rounded-full bg-transparent border-none cursor-pointer grid place-items-center"
           >
             <Icon name="more-vertical" size={22} color="var(--text-primary)" />
           </button>
+
           {showOverflow && (
-            <div style={{
-              position: 'absolute', right: 8, top: 52, zIndex: 300,
-              background: 'var(--surface2)', borderRadius: 14,
-              boxShadow: '0 8px 32px rgba(0,0,0,0.36)',
-              border: '1px solid var(--border)',
-              minWidth: 170, overflow: 'hidden',
-            }}>
+            <div className="absolute right-2 top-[52px] z-[300] bg-c-surface2 rounded-card border border-c-border shadow-overlay overflow-hidden min-w-[170px]">
               {[
-                { icon: 'edit', label: 'Edit goal', action: () => { setShowOverflow(false); onEdit(); }, danger: false },
+                { icon: 'edit',  label: 'Edit goal',   action: () => { setShowOverflow(false); onEdit(); }, danger: false },
                 { icon: goal.archived ? 'unarchive' : 'archive', label: goal.archived ? 'Unarchive' : 'Archive', action: handleArchive, danger: false },
                 { icon: 'trash', label: 'Delete goal', action: () => { setShowOverflow(false); setShowDeleteConfirm(true); }, danger: true },
               ].map((item, i, arr) => (
                 <button
                   key={item.label}
                   onClick={item.action}
-                  style={{
-                    width: '100%', padding: '13px 16px',
-                    display: 'flex', alignItems: 'center', gap: 12,
-                    background: 'none', border: 'none', cursor: 'pointer',
-                    borderBottom: i < arr.length - 1 ? '1px solid var(--border)' : 'none',
-                    color: item.danger ? '#FF6B7A' : 'var(--text-primary)',
-                    fontSize: 14, fontWeight: 500, textAlign: 'left',
-                  }}
+                  className={[
+                    'w-full flex items-center gap-3 px-4 py-3.5 bg-transparent border-none cursor-pointer text-sm font-medium text-left',
+                    item.danger ? 'text-danger' : 'text-c-text1',
+                    i < arr.length - 1 ? 'border-b border-c-border' : '',
+                  ].join(' ')}
                 >
                   <Icon name={item.icon} size={17} color={item.danger ? '#FF6B7A' : 'var(--text-tertiary)'} />
                   {item.label}
@@ -166,38 +148,42 @@ export const GoalDetail: React.FC<GoalDetailProps> = ({
         </div>
       </div>
 
-      {/* Scrollable body */}
-      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 108 }}>
+      {/* ── Scrollable body ───────────────────────────────────────── */}
+      <div className="flex-1 overflow-y-auto pb-28">
 
-        {/* Hero */}
-        <div style={{ padding: '24px 24px 0', textAlign: 'center' }}>
-          <div style={{
-            width: 68, height: 68, borderRadius: 22,
-            background: `color-mix(in srgb, ${catColor} 18%, transparent)`,
-            display: 'inline-grid', placeItems: 'center',
-            fontSize: 30, marginBottom: 14,
-          }}>{goal.icon}</div>
-          <div style={{ color: 'var(--text-primary)', fontSize: 22, fontWeight: 700, letterSpacing: -0.4, lineHeight: 1.25, marginBottom: 12 }}>
-            {goal.title}
+        {/* Hero: icon + chips */}
+        <div className="pt-6 px-6 text-center">
+          {/* catColor-dependent icon bg — stays inline */}
+          <div
+            className="inline-grid place-items-center text-[30px] rounded-[22px] mb-3.5 w-[68px] h-[68px]"
+            style={{ background: `color-mix(in srgb, ${catColor} 18%, transparent)` }}
+          >
+            {goal.icon}
           </div>
+
+          <h2
+            className="text-2xl font-bold text-c-text1 mb-3"
+            style={{ letterSpacing: -0.4, lineHeight: 1.25 }}
+          >
+            {goal.title}
+          </h2>
+
           <div className="flex justify-center items-center flex-wrap gap-2">
+            {/* catColor-dependent pill — stays inline */}
             <Pill color={catColor} bg={`color-mix(in srgb, ${catColor} 14%, transparent)`} dot>
               {goal.category}
             </Pill>
-            <span style={{
-              fontSize: 12, fontWeight: 600,
-              display: 'inline-flex', alignItems: 'center', gap: 4,
-              background: `color-mix(in srgb, ${prioColor} 13%, transparent)`,
-              color: prioColor, padding: '3px 9px', borderRadius: 20,
-            }}>
-              <span style={{ width: 5, height: 5, borderRadius: '50%', background: prioColor, flexShrink: 0 }} />
+
+            {/* Priority chip — prioColor is from PRIORITY_META map, stays inline */}
+            <span
+              className="inline-flex items-center gap-1 text-xs font-semibold px-[9px] py-[3px] rounded-chip"
+              style={{ background: `color-mix(in srgb, ${prioColor} 13%, transparent)`, color: prioColor }}
+            >
+              <span className="w-[5px] h-[5px] rounded-full flex-shrink-0" style={{ background: prioColor }} />
               {goal.priority}
             </span>
-            <span style={{
-              fontSize: 12, color: 'var(--text-secondary)',
-              background: 'var(--surface)', border: '1px solid var(--border)',
-              padding: '3px 9px', borderRadius: 20,
-            }}>
+
+            <span className="text-xs text-c-text2 bg-c-surface border border-c-border px-[9px] py-[3px] rounded-chip">
               Ends {goal.end.slice(5).replace('-', '/')}
             </span>
           </div>
@@ -205,138 +191,134 @@ export const GoalDetail: React.FC<GoalDetailProps> = ({
 
         {/* Progress ring */}
         <div className="flex justify-center" style={{ padding: '28px 24px 8px' }}>
-          <div style={{ position: 'relative', width: 148, height: 148 }}>
+          <div className="relative w-[148px] h-[148px]">
             <svg width="148" height="148" viewBox="0 0 148 148" style={{ transform: 'rotate(-90deg)' }}>
               <circle cx="74" cy="74" r={R} stroke="var(--surface2)" strokeWidth="11" fill="none" />
-              <circle cx="74" cy="74" r={R} stroke={catColor} strokeWidth="11" fill="none"
-                strokeLinecap="round"
+              {/* SVG stroke uses catColor (runtime) — stays inline */}
+              <circle
+                cx="74" cy="74" r={R} fill="none"
+                strokeWidth="11" strokeLinecap="round"
+                stroke={catColor}
                 strokeDasharray={C}
                 strokeDashoffset={C - (C * ringPct / 100)}
-                style={{ transition: 'stroke-dashoffset 1100ms cubic-bezier(.2,.8,.2,1)' }} />
+                style={{ transition: 'stroke-dashoffset 1100ms cubic-bezier(.2,.8,.2,1)' }}
+              />
             </svg>
-            <div style={{
-              position: 'absolute', inset: 0,
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <div style={{ color: 'var(--text-primary)', fontSize: 34, fontWeight: 800, letterSpacing: -1, lineHeight: 1 }}>{pct}%</div>
-              <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginTop: 3 }}>{goal.taskDone} / {goal.taskTotal}</div>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <div
+                className="text-c-text1 font-extrabold"
+                style={{ fontSize: 34, letterSpacing: -1, lineHeight: 1 }}
+              >
+                {pct}%
+              </div>
+              <div className="text-xs text-c-text2 mt-1">{goal.taskDone} / {goal.taskTotal}</div>
             </div>
           </div>
         </div>
 
         {/* Stat cards */}
-        <div className="flex gap-2.5" style={{ padding: '16px 20px 24px' }}>
+        <div className="flex gap-2.5 px-5 pb-6 pt-4">
           {[
-            { icon: 'clock', color: 'var(--warning)', value: `${days}`, label: 'days left' },
-            { icon: 'flame', color: 'var(--secondary)', value: `${goal.streak}`, label: 'day streak' },
-            { icon: 'check', color: 'var(--success)', value: `${goal.taskDone}`, label: `of ${goal.taskTotal}` },
+            { icon: 'clock',  color: 'var(--warning)',   value: `${days}`,          label: 'days left'   },
+            { icon: 'flame',  color: 'var(--secondary)', value: `${goal.streak}`,   label: 'day streak'  },
+            { icon: 'check',  color: 'var(--success)',   value: `${goal.taskDone}`, label: `of ${goal.taskTotal}` },
           ].map(s => (
-            <div key={s.label} style={{
-              flex: 1, background: 'var(--surface)', border: '1px solid var(--border)',
-              borderRadius: 16, padding: '14px 8px',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7,
-            }}>
-              <div style={{
-                width: 34, height: 34, borderRadius: 11,
-                background: `color-mix(in srgb, ${s.color} 14%, transparent)`,
-                display: 'grid', placeItems: 'center',
-              }}>
+            <div
+              key={s.label}
+              className="flex-1 flex flex-col items-center gap-[7px] bg-c-surface border border-c-border rounded-2xl py-3.5 px-2"
+            >
+              {/* Icon bg uses inline because color is a runtime prop */}
+              <div
+                className="w-[34px] h-[34px] rounded-[11px] grid place-items-center"
+                style={{ background: `color-mix(in srgb, ${s.color} 14%, transparent)` }}
+              >
                 <Icon name={s.icon} size={17} color={s.color} stroke={2} />
               </div>
-              <div style={{ color: 'var(--text-primary)', fontSize: 22, fontWeight: 800, lineHeight: 1 }}>{s.value}</div>
-              <div style={{ color: 'var(--text-secondary)', fontSize: 11, textAlign: 'center', lineHeight: 1.3 }}>{s.label}</div>
+              <div className="text-2xl font-extrabold text-c-text1 leading-none">{s.value}</div>
+              <div className="text-2xs text-c-text2 text-center leading-snug">{s.label}</div>
             </div>
           ))}
         </div>
 
-        <div style={{ height: 6, background: 'var(--surface)', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }} />
+        {/* Divider */}
+        <div className="h-[6px] bg-c-surface border-t border-b border-c-border" />
 
-        {/* Linked Series */}
-        <div className="flex items-center justify-between" style={{ padding: '18px 20px 10px' }}>
+        {/* ── Linked Series section ─────────────────────────────── */}
+        <div className="flex items-center justify-between pt-4.5 px-5 pb-2.5">
           <div className="flex items-center gap-2">
-            <span style={{ color: 'var(--text-secondary)', fontSize: 11, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase' }}>
-              Linked Series
+            <span className="text-2xs font-bold text-c-text2 uppercase tracking-badge">Linked Series</span>
+            <span className="text-2xs font-bold px-[7px] py-[2px] rounded-[10px] bg-c-surface2 text-c-text3">
+              {linkedSeries.length}
             </span>
-            <span style={{
-              fontSize: 11, fontWeight: 700, padding: '2px 7px', borderRadius: 10,
-              background: 'var(--surface2)', color: 'var(--text-tertiary)',
-            }}>{linkedSeries.length}</span>
           </div>
           <button
             onClick={() => setShowLinkMenu(s => !s)}
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 5,
-              padding: '6px 14px', borderRadius: 20,
-              background: showLinkMenu ? 'color-mix(in srgb, var(--primary) 15%, transparent)' : 'transparent',
-              border: `1px solid ${showLinkMenu ? 'color-mix(in srgb, var(--primary) 35%, transparent)' : 'var(--border)'}`,
-              color: 'var(--primary)', fontSize: 12, fontWeight: 600, cursor: 'pointer',
-            }}
+            className={[
+              'inline-flex items-center gap-[5px] py-1.5 px-3.5 rounded-chip text-c-primary text-xs font-semibold cursor-pointer border',
+              showLinkMenu
+                ? 'bg-primary-soft border-primary-active'
+                : 'bg-transparent border-c-border',
+            ].join(' ')}
           >
             <Icon name="link" size={13} color="var(--primary)" />
             Link series
           </button>
         </div>
 
-        <div style={{ padding: '0 20px 20px' }}>
+        <div className="px-5 pb-5">
+          {/* Series picker */}
           {showLinkMenu && (
-            <div style={{
-              background: 'var(--surface)', border: '1px solid var(--border)',
-              borderRadius: 16, padding: '14px 14px 6px', marginBottom: 12,
-            }}>
-              <div style={{ color: 'var(--text-secondary)', fontSize: 11, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 10 }}>
+            <div className="bg-c-surface border border-c-border rounded-2xl p-3.5 pb-1.5 mb-3">
+              <p className="text-2xs font-bold text-c-text2 uppercase tracking-label mb-2.5">
                 Select a recurring series
-              </div>
-              <div className="flex items-center gap-2" style={{
-                background: 'var(--bg)', border: '1px solid var(--border)',
-                borderRadius: 10, padding: '9px 12px', marginBottom: 10,
-              }}>
+              </p>
+              <div className="flex items-center gap-2 bg-c-bg border border-c-border rounded-[10px] px-3 py-[9px] mb-2.5">
                 <Icon name="search" size={15} color="var(--text-tertiary)" />
                 <input
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   placeholder="Search tasks..."
-                  style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: 'var(--text-primary)', fontSize: 14 }}
+                  className="flex-1 bg-transparent border-none outline-none text-c-text1 text-base"
                 />
               </div>
-              <div style={{ maxHeight: 260, overflowY: 'auto' }}>
+              <div className="max-h-[260px] overflow-y-auto">
                 {(() => {
                   const q = searchQuery.toLowerCase();
                   const filtered = seriesItems.filter(s => s.name.toLowerCase().includes(q));
                   if (filtered.length === 0) {
                     return (
-                      <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--text-secondary)', fontSize: 13 }}>
-                        {seriesItems.length === 0 ? 'No recurring tasks found. Sync your tasks first.' : 'No tasks match your search.'}
-                      </div>
+                      <p className="py-5 text-center text-c-text2 text-sm">
+                        {seriesItems.length === 0
+                          ? 'No recurring tasks found. Sync your tasks first.'
+                          : 'No tasks match your search.'}
+                      </p>
                     );
                   }
                   return filtered.map((series, idx, arr) => {
                     const isLinked = (goal.linkedSeriesIds || []).includes(series.id);
                     return (
-                      <div key={series.id} className="flex items-center justify-between gap-2.5" style={{
-                        padding: '12px 0',
-                        borderBottom: idx < arr.length - 1 ? '1px solid var(--border)' : 'none',
-                      }}>
+                      <div
+                        key={series.id}
+                        className={[
+                          'flex items-center justify-between gap-2.5 py-3',
+                          idx < arr.length - 1 ? 'border-b border-c-border' : '',
+                        ].join(' ')}
+                      >
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center flex-wrap gap-1.5">
-                            <span style={{ color: 'var(--text-primary)', fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                              {series.name}
-                            </span>
+                            <span className="text-base font-medium text-c-text1 truncate">{series.name}</span>
                             {series.taskCount > 1 && (
-                              <span style={{
-                                fontSize: 11, fontWeight: 700, padding: '1px 7px', borderRadius: 8,
-                                background: 'color-mix(in srgb, var(--warning) 14%, transparent)',
-                                color: 'var(--warning)', flexShrink: 0,
-                              }}>×{series.taskCount}</span>
+                              <span className="text-2xs font-bold px-[7px] py-px rounded-lg bg-warning-soft text-c-warning flex-shrink-0">
+                                ×{series.taskCount}
+                              </span>
                             )}
                           </div>
                           {series.tags.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-1">
                               {series.tags.slice(0, 4).map(tag => (
-                                <span key={tag} style={{
-                                  fontSize: 10, padding: '2px 7px', borderRadius: 6,
-                                  background: 'var(--surface2)', color: 'var(--text-secondary)',
-                                  border: '1px solid var(--border)',
-                                }}>{tag}</span>
+                                <span key={tag} className="text-[10px] px-[7px] py-[2px] rounded-lg bg-c-surface2 text-c-text2 border border-c-border">
+                                  {tag}
+                                </span>
                               ))}
                             </div>
                           )}
@@ -348,14 +330,12 @@ export const GoalDetail: React.FC<GoalDetailProps> = ({
                               : [...(goal.linkedSeriesIds || []), series.id];
                             onUpdateGoal(goal.id, { linkedSeriesIds: newIds });
                           }}
-                          style={{
-                            padding: '6px 14px', borderRadius: 20, flexShrink: 0,
-                            background: isLinked ? 'color-mix(in srgb, var(--success) 14%, transparent)' : 'var(--primary)',
-                            color: isLinked ? 'var(--success)' : '#fff',
-                            border: isLinked ? '1px solid color-mix(in srgb, var(--success) 30%, transparent)' : 'none',
-                            cursor: 'pointer', fontSize: 12, fontWeight: 700,
-                            display: 'inline-flex', alignItems: 'center', gap: 4,
-                          }}
+                          className={[
+                            'inline-flex items-center gap-1 py-1.5 px-3.5 rounded-chip flex-shrink-0 text-xs font-bold cursor-pointer',
+                            isLinked
+                              ? 'bg-success-muted text-c-success border border-success-glow'
+                              : 'bg-c-primary text-white border-none',
+                          ].join(' ')}
                         >
                           {isLinked ? '✓ Linked' : 'Link'}
                         </button>
@@ -367,29 +347,24 @@ export const GoalDetail: React.FC<GoalDetailProps> = ({
             </div>
           )}
 
+          {/* Linked series cards */}
           {linkedSeries.length === 0 ? (
-            <div style={{
-              padding: '28px 16px', textAlign: 'center',
-              background: 'var(--surface)', borderRadius: 16,
-              border: '1.5px dashed var(--border)',
-            }}>
+            <div className="py-7 px-4 text-center bg-c-surface rounded-2xl border border-dashed border-c-border">
               <Icon name="link" size={24} color="var(--text-tertiary)" style={{ display: 'inline-block' }} />
-              <div style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 10 }}>
-                No series linked to this goal yet.
-              </div>
-              <button onClick={() => setShowLinkMenu(true)} style={{
-                marginTop: 12, padding: '7px 18px', borderRadius: 20,
-                background: 'color-mix(in srgb, var(--primary) 14%, transparent)',
-                border: '1px solid color-mix(in srgb, var(--primary) 28%, transparent)',
-                color: 'var(--primary)', fontSize: 12, fontWeight: 600, cursor: 'pointer',
-              }}>Link a series</button>
+              <p className="text-c-text2 text-sm mt-2.5">No series linked to this goal yet.</p>
+              <button
+                onClick={() => setShowLinkMenu(true)}
+                className="mt-3 py-[7px] px-[18px] rounded-chip bg-primary-muted border border-primary-glow text-c-primary text-xs font-semibold cursor-pointer"
+              >
+                Link a series
+              </button>
             </div>
           ) : (
-            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
+            <div className="bg-c-surface border border-c-border rounded-2xl overflow-hidden">
               {linkedSeries.map((s, i, arr) => {
                 const isExpanded = expandedSeriesId === s.id;
-                const instances = seriesInstances[s.id] || [];
-                const doneCount = instances.filter(t => t.completed || t.completedMin).length;
+                const instances  = seriesInstances[s.id] || [];
+                const doneCount  = instances.filter(t => t.completed || t.completedMin).length;
 
                 const handleToggle = async () => {
                   const opening = expandedSeriesId !== s.id;
@@ -405,80 +380,88 @@ export const GoalDetail: React.FC<GoalDetailProps> = ({
                 };
 
                 return (
-                  <div key={s.id} style={{ borderBottom: i < arr.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                    <div onClick={handleToggle} style={{
-                      padding: '14px 16px',
-                      display: 'flex', alignItems: 'center', gap: 12,
-                      cursor: 'pointer',
-                      background: isExpanded ? 'color-mix(in srgb, var(--primary) 6%, transparent)' : 'transparent',
-                      transition: 'background 150ms',
-                    }}>
-                      <div style={{
-                        width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-                        background: 'color-mix(in srgb, var(--primary) 14%, transparent)',
-                        display: 'grid', placeItems: 'center',
-                      }}>
+                  <div
+                    key={s.id}
+                    className={i < arr.length - 1 ? 'border-b border-c-border' : ''}
+                  >
+                    {/* Series header row */}
+                    <div
+                      onClick={handleToggle}
+                      className={[
+                        'flex items-center gap-3 p-4 cursor-pointer',
+                        isExpanded ? 'bg-primary-subtle' : 'bg-transparent',
+                      ].join(' ')}
+                      style={{ transition: 'background 150ms' }}
+                    >
+                      <div className="w-9 h-9 rounded-[10px] flex-shrink-0 grid place-items-center bg-primary-muted">
                         <Icon name="repeat" size={17} color="var(--primary)" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div style={{ color: 'var(--text-primary)', fontSize: 14, fontWeight: 600 }}>{s.name}</div>
-                        <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginTop: 2 }}>
+                        <div className="text-base font-semibold text-c-text1">{s.name}</div>
+                        <div className="text-xs text-c-text2 mt-0.5">
                           {isExpanded && instances.length > 0
                             ? `${doneCount} / ${instances.length} done in range`
                             : `${s.taskCount} instances · last ${s.lastSeen ? s.lastSeen.slice(5).replace('-', '/') : '—'}`}
                         </div>
                       </div>
                       {s.tags.slice(0, 2).map(tag => (
-                        <span key={tag} style={{
-                          fontSize: 10, padding: '2px 7px', borderRadius: 6, flexShrink: 0,
-                          background: 'var(--surface2)', color: 'var(--text-secondary)',
-                          border: '1px solid var(--border)',
-                        }}>{tag}</span>
+                        <span key={tag} className="text-[10px] px-[7px] py-[2px] rounded-lg bg-c-surface2 text-c-text2 border border-c-border flex-shrink-0">
+                          {tag}
+                        </span>
                       ))}
-                      <div style={{
-                        flexShrink: 0,
-                        transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                        transition: 'transform 200ms ease',
-                        display: 'grid', placeItems: 'center',
-                      }}>
+                      <div
+                        className="flex-shrink-0 grid place-items-center"
+                        style={{
+                          transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                          transition: 'transform 200ms ease',
+                        }}
+                      >
                         <Icon name="chevron-down" size={16} color="var(--text-tertiary)" />
                       </div>
                     </div>
 
+                    {/* Expanded instances */}
                     {isExpanded && (
-                      <div style={{ borderTop: '1px solid var(--border)', background: 'var(--bg)', maxHeight: 300, overflowY: 'auto' }}>
+                      <div className="border-t border-c-border bg-c-bg max-h-[300px] overflow-y-auto">
                         {instances.length === 0 ? (
-                          <div style={{ padding: '20px 16px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: 13 }}>
+                          <p className="py-5 px-4 text-center text-c-text2 text-sm">
                             No instances in this goal's date range.
-                          </div>
+                          </p>
                         ) : instances.map((t, idx) => {
-                          const done = t.completed as boolean;
+                          const done    = t.completed as boolean;
                           const minOnly = !done && (t.completedMin as boolean);
                           const pending = !done && !minOnly;
-                          const dotColor = done ? 'var(--success)' : minOnly ? 'var(--warning)' : 'var(--border)';
-                          const chipLabel = done ? 'Done' : minOnly ? 'Min' : '—';
-                          const chipColor = done ? 'var(--success)' : minOnly ? 'var(--warning)' : 'var(--text-tertiary)';
+                          const dotColor  = done ? 'var(--success)' : minOnly ? 'var(--warning)' : 'var(--border)';
+                          const chipLabel = done ? 'Done'            : minOnly ? 'Min'           : '—';
+                          const chipColor = done ? 'var(--success)'  : minOnly ? 'var(--warning)' : 'var(--text-tertiary)';
                           const [, mm, dd] = (t.date as string).split('-');
                           const dateLabel = `${MONTHS[parseInt(mm, 10) - 1]} ${parseInt(dd, 10)}`;
 
                           return (
-                            <div key={t.id as string} className="flex items-center gap-3" style={{
-                              padding: '9px 16px',
-                              borderBottom: idx < instances.length - 1 ? '1px solid color-mix(in srgb, var(--border) 50%, transparent)' : 'none',
-                              opacity: pending ? 0.55 : 1,
-                            }}>
-                              <div style={{
-                                width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
-                                background: dotColor,
-                                boxShadow: done ? `0 0 5px ${dotColor}` : 'none',
-                              }} />
-                              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', minWidth: 50, flexShrink: 0 }}>{dateLabel}</span>
+                            <div
+                              key={t.id as string}
+                              className={[
+                                'flex items-center gap-3 px-4 py-[9px]',
+                                idx < instances.length - 1 ? 'border-b border-c-border/50' : '',
+                                pending ? 'opacity-55' : '',
+                              ].join(' ')}
+                            >
+                              {/* Status dot — color is runtime */}
+                              <div
+                                className="w-2 h-2 rounded-full flex-shrink-0"
+                                style={{ background: dotColor, boxShadow: done ? `0 0 5px ${dotColor}` : 'none' }}
+                              />
+                              <span className="text-sm font-semibold text-c-text1 min-w-[50px] flex-shrink-0">
+                                {dateLabel}
+                              </span>
                               <div className="flex-1" />
-                              <span style={{
-                                fontSize: 11, fontWeight: 700, color: chipColor,
-                                padding: '2px 8px', borderRadius: 8,
-                                background: `color-mix(in srgb, ${chipColor} 13%, transparent)`,
-                              }}>{chipLabel}</span>
+                              {/* Chip color is runtime */}
+                              <span
+                                className="text-2xs font-bold px-2 py-[2px] rounded-lg"
+                                style={{ color: chipColor, background: `color-mix(in srgb, ${chipColor} 13%, transparent)` }}
+                              >
+                                {chipLabel}
+                              </span>
                             </div>
                           );
                         })}
@@ -491,185 +474,135 @@ export const GoalDetail: React.FC<GoalDetailProps> = ({
           )}
         </div>
 
-        <div style={{ height: 6, background: 'var(--surface)', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }} />
+        {/* Divider */}
+        <div className="h-[6px] bg-c-surface border-t border-b border-c-border" />
 
-        {/* Progress Log */}
-        <div className="flex items-center justify-between" style={{ padding: '18px 20px 10px' }}>
+        {/* ── Progress Log section ──────────────────────────────── */}
+        <div className="flex items-center justify-between pt-4.5 px-5 pb-2.5">
           <div className="flex items-center gap-2">
-            <span style={{ color: 'var(--text-secondary)', fontSize: 11, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase' }}>
-              Progress Log
+            <span className="text-2xs font-bold text-c-text2 uppercase tracking-badge">Progress Log</span>
+            <span className="text-2xs font-bold px-[7px] py-[2px] rounded-[10px] bg-c-surface2 text-c-text3">
+              {goal.manualLogs.length}
             </span>
-            <span style={{
-              fontSize: 11, fontWeight: 700, padding: '2px 7px', borderRadius: 10,
-              background: 'var(--surface2)', color: 'var(--text-tertiary)',
-            }}>{goal.manualLogs.length}</span>
           </div>
           <button
             onClick={() => setShowLogForm(s => !s)}
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 5,
-              padding: '6px 14px', borderRadius: 20,
-              background: showLogForm ? 'color-mix(in srgb, var(--primary) 15%, transparent)' : 'transparent',
-              border: `1px solid ${showLogForm ? 'color-mix(in srgb, var(--primary) 35%, transparent)' : 'var(--border)'}`,
-              color: 'var(--primary)', fontSize: 12, fontWeight: 600, cursor: 'pointer',
-            }}
+            className={[
+              'inline-flex items-center gap-[5px] py-1.5 px-3.5 rounded-chip text-c-primary text-xs font-semibold cursor-pointer border',
+              showLogForm
+                ? 'bg-primary-soft border-primary-active'
+                : 'bg-transparent border-c-border',
+            ].join(' ')}
           >
             <Icon name="plus" size={13} color="var(--primary)" stroke={2.4} />
             Log entry
           </button>
         </div>
 
-        <div style={{ padding: '0 20px 24px' }}>
+        <div className="px-5 pb-6">
+          {/* Log form */}
           {showLogForm && (
-            <div style={{
-              background: 'var(--surface)', border: '1px solid var(--border)',
-              borderRadius: 16, padding: 16, marginBottom: 12,
-            }}>
-              <div style={{ color: 'var(--text-secondary)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 7 }}>
-                Minutes spent
-              </div>
+            <div className="bg-c-surface border border-c-border rounded-2xl p-4 mb-3">
+              <p className="text-2xs font-bold text-c-text2 uppercase tracking-label mb-[7px]">Minutes spent</p>
               <input
                 type="number"
                 value={minutes}
                 onChange={e => setMinutes(e.target.value)}
-                style={{
-                  width: '100%', padding: '11px 14px',
-                  background: 'var(--bg)', border: '1px solid var(--border)',
-                  borderRadius: 10, color: 'var(--text-primary)',
-                  fontSize: 16, fontWeight: 600, outline: 'none', boxSizing: 'border-box',
-                }}
+                className="w-full px-3.5 py-[11px] bg-c-bg border border-c-border rounded-[10px] text-c-text1 text-lg font-semibold outline-none box-border"
               />
-              <div style={{ color: 'var(--text-secondary)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6, marginTop: 14, marginBottom: 7 }}>
-                Journal note
-              </div>
+              <p className="text-2xs font-bold text-c-text2 uppercase tracking-label mt-3.5 mb-[7px]">Journal note</p>
               <textarea
                 value={note}
                 onChange={e => setNote(e.target.value)}
                 placeholder="What did you work on?"
                 rows={3}
-                style={{
-                  width: '100%', padding: '11px 14px',
-                  background: 'var(--bg)', border: '1px solid var(--border)',
-                  borderRadius: 10, color: 'var(--text-primary)',
-                  fontSize: 14, lineHeight: 1.4, outline: 'none', resize: 'none',
-                  fontFamily: 'inherit', boxSizing: 'border-box',
-                }}
+                className="w-full px-3.5 py-[11px] bg-c-bg border border-c-border rounded-[10px] text-c-text1 text-base outline-none resize-none font-[inherit] box-border"
+                style={{ lineHeight: 1.4 }}
               />
               <div className="flex gap-2.5 mt-3.5">
                 <button
                   onClick={() => setShowLogForm(false)}
-                  style={{
-                    flex: 1, padding: 12,
-                    background: 'var(--bg)', border: '1px solid var(--border)',
-                    borderRadius: 12, color: 'var(--text-secondary)', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                  }}
-                >Cancel</button>
+                  className="flex-1 py-3 bg-c-bg border border-c-border rounded-xl text-c-text2 text-sm font-semibold cursor-pointer"
+                >
+                  Cancel
+                </button>
                 <button
                   onClick={handleSubmitLog}
-                  style={{
-                    flex: 2, padding: 12,
-                    background: 'var(--primary)', border: 'none',
-                    borderRadius: 12, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                  }}
-                >Save Entry</button>
+                  className="flex-[2] py-3 bg-c-primary border-none rounded-xl text-white text-sm font-bold cursor-pointer"
+                >
+                  Save Entry
+                </button>
               </div>
             </div>
           )}
 
+          {/* Empty state */}
           {goal.manualLogs.length === 0 && !showLogForm && (
-            <div style={{
-              padding: '28px 16px', textAlign: 'center',
-              background: 'var(--surface)', borderRadius: 16,
-              border: '1.5px dashed var(--border)',
-            }}>
+            <div className="py-7 px-4 text-center bg-c-surface rounded-2xl border border-dashed border-c-border">
               <Icon name="note" size={24} color="var(--text-tertiary)" style={{ display: 'inline-block' }} />
-              <div style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 10 }}>
-                No entries yet. Log your first session.
-              </div>
+              <p className="text-c-text2 text-sm mt-2.5">No entries yet. Log your first session.</p>
             </div>
           )}
 
+          {/* Log entries — catColor-dependent left border stays inline */}
           {goal.manualLogs.map((log, i) => {
-            // Handle legacy string logs and new ManualLog objects
             type LogCompat = ManualLog & { effortMinutes?: number; notes?: string };
             const l: LogCompat = typeof log === 'string'
               ? { date: 'Entry', minutes: 0, note: log }
               : log as LogCompat;
             const mins = l.minutes ?? l.effortMinutes ?? 0;
+
             return (
-              <div key={i} style={{
-                background: 'var(--surface)', borderRadius: 14,
-                border: '1px solid var(--border)',
-                borderLeft: `3px solid ${catColor}`,
-                padding: '14px 16px', marginBottom: 8,
-              }}>
+              <div
+                key={i}
+                className="bg-c-surface rounded-card border border-c-border mb-2 px-4 py-3.5"
+                style={{ borderLeft: `3px solid ${catColor}` }}
+              >
                 <div className="flex items-center justify-between mb-1">
-                  <span style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 600 }}>{l.date}</span>
-                  <span style={{
-                    color: 'var(--warning)', fontSize: 12, fontWeight: 700,
-                    display: 'inline-flex', alignItems: 'center', gap: 4,
-                    background: 'color-mix(in srgb, var(--warning) 12%, transparent)',
-                    padding: '2px 8px', borderRadius: 10,
-                  }}>
+                  <span className="text-sm font-semibold text-c-text1">{l.date}</span>
+                  <span className="inline-flex items-center gap-1 text-xs font-bold text-c-warning bg-warning-muted px-2 py-[2px] rounded-[10px]">
                     <Icon name="clock" size={12} color="var(--warning)" stroke={2} />
                     {mins} min
                   </span>
                 </div>
-                <div style={{ color: 'var(--text-secondary)', fontSize: 13.5, lineHeight: 1.55 }}>
-                  {l.note ?? l.notes}
-                </div>
+                <p className="text-c-text2 text-sm leading-[1.55]">{l.note ?? l.notes}</p>
               </div>
             );
           })}
         </div>
       </div>
 
-      {/* Delete confirmation */}
+      {/* ── Delete confirmation modal ─────────────────────────────── */}
       {showDeleteConfirm && (
         <div
-          style={{
-            position: 'fixed', inset: 0, zIndex: 400,
-            background: 'rgba(0,0,0,0.62)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
-          }}
+          className="fixed inset-0 z-[400] bg-black/[0.62] flex items-center justify-center p-6"
           onClick={() => setShowDeleteConfirm(false)}
         >
           <div
-            style={{
-              background: 'var(--surface2)', borderRadius: 22,
-              padding: '28px 24px 24px', width: '100%', maxWidth: 320,
-              boxShadow: '0 24px 60px rgba(0,0,0,0.4)',
-            }}
+            className="bg-c-surface2 rounded-[22px] p-7 pb-6 w-full max-w-[320px] shadow-modal"
             onClick={e => e.stopPropagation()}
           >
-            <div style={{
-              width: 52, height: 52, borderRadius: 16,
-              background: 'color-mix(in srgb, #FF6B7A 14%, transparent)',
-              display: 'grid', placeItems: 'center', marginBottom: 16,
-            }}>
+            <div className="w-[52px] h-[52px] rounded-2xl bg-danger-muted grid place-items-center mb-4">
               <Icon name="trash" size={24} color="#FF6B7A" stroke={1.8} />
             </div>
-            <div style={{ color: 'var(--text-primary)', fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Delete Goal?</div>
-            <div style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.55, marginBottom: 28 }}>
-              <strong style={{ color: 'var(--text-primary)' }}>{goal.title}</strong> and all its progress logs will be permanently removed.
-            </div>
+            <h3 className="text-xl font-bold text-c-text1 mb-2">Delete Goal?</h3>
+            <p className="text-c-text2 text-base mb-7" style={{ lineHeight: 1.55 }}>
+              <strong className="text-c-text1">{goal.title}</strong>{' '}
+              and all its progress logs will be permanently removed.
+            </p>
             <div className="flex gap-2.5">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                style={{
-                  flex: 1, padding: 13,
-                  background: 'var(--surface)', border: '1px solid var(--border)',
-                  borderRadius: 12, color: 'var(--text-primary)', fontSize: 14, fontWeight: 600, cursor: 'pointer',
-                }}
-              >Cancel</button>
+                className="flex-1 py-[13px] bg-c-surface border border-c-border rounded-xl text-c-text1 text-base font-semibold cursor-pointer"
+              >
+                Cancel
+              </button>
               <button
                 onClick={handleDelete}
-                style={{
-                  flex: 1, padding: 13,
-                  background: '#FF6B7A', border: 'none',
-                  borderRadius: 12, color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer',
-                }}
-              >Delete</button>
+                className="flex-1 py-[13px] bg-danger border-none rounded-xl text-white text-base font-bold cursor-pointer"
+              >
+                Delete
+              </button>
             </div>
           </div>
         </div>

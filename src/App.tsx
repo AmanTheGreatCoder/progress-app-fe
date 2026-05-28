@@ -1,9 +1,9 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Layout from './components/Layout';
-import Dashboard from './pages/Dashboard';
-import Tasks from './pages/Tasks';
-import Goals from './pages/Goals';
-import Analytics from './pages/Analytics';
+import Layout from '@shared/components/layout/Layout';
+import { Dashboard } from '@features/dashboard';
+import { TasksPage } from '@features/tasks';
+import { GoalsPage } from '@features/goals';
+import { Analytics } from '@features/analytics';
 
 function App() {
   return (
@@ -11,8 +11,8 @@ function App() {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
-          <Route path="tasks" element={<Tasks />} />
-          <Route path="goals" element={<Goals />} />
+          <Route path="tasks" element={<TasksPage />} />
+          <Route path="goals" element={<GoalsPage />} />
           <Route path="analytics" element={<Analytics />} />
         </Route>
       </Routes>

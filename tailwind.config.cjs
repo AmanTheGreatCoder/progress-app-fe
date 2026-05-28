@@ -39,6 +39,8 @@ module.exports = {
         // Success
         'success-muted':   'color-mix(in srgb, var(--success) 14%, transparent)',
         'success-glow':    'color-mix(in srgb, var(--success) 30%, transparent)',
+        // Secondary
+        'secondary-muted': 'color-mix(in srgb, var(--secondary) 12%, transparent)',
         // Warning
         'warning-muted':   'color-mix(in srgb, var(--warning) 12%, transparent)',
         'warning-soft':    'color-mix(in srgb, var(--warning) 14%, transparent)',
@@ -54,6 +56,7 @@ module.exports = {
       },
 
       fontSize: {
+        '3xs': ['9.5px', { lineHeight: '1.4' }],
         '2xs': ['11px',  { lineHeight: '1.4' }],
         'xs':  ['12px',  { lineHeight: '1.4' }],
         'sm':  ['13px',  { lineHeight: '1.5' }],

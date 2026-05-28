@@ -2,26 +2,24 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Icon } from './ui/Icon';
 
+const ITEMS = [
+  { id: 'dashboard', path: '/',          label: 'Home',      icon: 'home'   },
+  { id: 'goals',     path: '/goals',     label: 'Goals',     icon: 'target' },
+  { id: 'tasks',     path: '/tasks',     label: 'Tasks',     icon: 'tasks'  },
+  { id: 'profile',   path: '/analytics', label: 'Analytics', icon: 'trend'  },
+] as const;
+
+function getTabFromPath(path: string) {
+  if (path === '/goals')     return 'goals';
+  if (path === '/tasks')     return 'tasks';
+  if (path === '/analytics') return 'profile';
+  return 'dashboard';
+}
+
 export const BottomNav: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-
-  const getTabFromPath = (path: string) => {
-    if (path === '/goals') return 'goals';
-    if (path === '/tasks') return 'tasks';
-    if (path === '/analytics') return 'profile'; // mapping 'You' or 'Analytics'
-    return 'dashboard';
-  };
-
   const currentTab = getTabFromPath(location.pathname);
-
-  const items = [
-    { id: 'dashboard', path: '/', label: 'Home', icon: 'home' },
-    { id: 'goals', path: '/goals', label: 'Goals', icon: 'target' },
-    { id: 'tasks', path: '/tasks', label: 'Tasks', icon: 'tasks' },
-    { id: 'profile', path: '/analytics', label: 'Analytics', icon: 'trend' },
-  ];
-
   const isSubScreen = location.search.includes('create=') || location.search.includes('id=');
 
   return (
@@ -44,22 +42,28 @@ export const BottomNav: React.FC = () => {
         gridTemplateColumns: 'repeat(4, 1fr)',
         boxShadow: '0 -8px 32px rgba(0,0,0,0.3)',
       }}>
-        {items.map(it => {
+        {ITEMS.map(it => {
           const active = currentTab === it.id;
           return (
-            <button key={it.id} onClick={() => navigate(it.path)} style={{
-              background: 'transparent', border: 'none', cursor: 'pointer',
-              padding: '8px 4px 6px',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
-              position: 'relative',
-            }}>
+            <button
+              key={it.id}
+              onClick={() => navigate(it.path)}
+              aria-label={it.label}
+              aria-current={active ? 'page' : undefined}
+              style={{
+                background: 'transparent', border: 'none', cursor: 'pointer',
+                padding: '8px 4px 6px',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+                position: 'relative',
+              }}
+            >
               <div style={{
                 width: 52, height: 34, borderRadius: 18,
-                background: active ? 'rgba(124,106,247,0.15)' : 'transparent', // var(--primary) with opacity
+                background: active ? 'rgba(124,106,247,0.15)' : 'transparent',
                 display: 'grid', placeItems: 'center',
                 transition: 'background 200ms',
               }}>
-                <Icon name={it.icon} size={24} color={active ? 'var(--primary)' : 'var(--text-secondary)'} stroke={active ? 2.2 : 1.7}/>
+                <Icon name={it.icon} size={24} color={active ? 'var(--primary)' : 'var(--text-secondary)'} stroke={active ? 2.2 : 1.7} />
               </div>
               <span style={{
                 fontSize: 12.5, fontWeight: 600,

@@ -8,14 +8,12 @@ import { useAppContext } from '../context/AppContext';
 import { useTasks } from '../hooks/useTasks';
 import { getLocalYMD } from '../utils/dateUtils';
 import api from '../services/api';
-import type { Goal } from '../types';
+import type { Goal, Task } from '../types';
 
 // ── TasksList ─────────────────────────────────────────────────────────────────
-// Receives already-filtered tasks for the selected day. Date state lives in
-// TasksPage so changes trigger a fresh fetch from the backend.
 
 interface TasksListProps {
-  tasks: any[];
+  tasks: Task[];
   goals: Goal[];
   loading: boolean;
   selected: string;
@@ -23,13 +21,16 @@ interface TasksListProps {
   onToggleTask: (id: string) => void;
 }
 
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
 const TasksList: React.FC<TasksListProps> = ({ tasks, goals, loading, selected, onSelect, onToggleTask }) => {
-  const done = tasks.filter(t => t.done || t.completed).length;
+  const done = tasks.filter(t => t.done).length;
   const total = tasks.length;
+  const pending = tasks.filter(t => !t.done);
 
   const selectedMeta = STRIP_DAYS.find(d => d.key === selected)!;
   const fullDate = new Date(selected + 'T00:00:00');
-  const monthName = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][fullDate.getMonth()];
+  const monthName = MONTH_NAMES[fullDate.getMonth()];
   const heading = !selectedMeta ? selected
     : selectedMeta.offset === 0 ? 'Today'
       : selectedMeta.offset === 1 ? 'Tomorrow'
@@ -37,18 +38,15 @@ const TasksList: React.FC<TasksListProps> = ({ tasks, goals, loading, selected, 
           : `${selectedMeta.dayName} ${selectedMeta.dayNum}`;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      {/* ── Header ────────────────────────────────────────────────────── */}
-      <div style={{ flexShrink: 0 }}>
-        <div style={{
-          padding: '0 20px 0px',
-          display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12,
-        }}>
-          <div style={{ minWidth: 0 }}>
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* Header */}
+      <div className="flex-shrink-0">
+        <div className="flex items-start justify-between gap-3" style={{ padding: '0 20px 0px' }}>
+          <div className="min-w-0">
             <div style={{ color: 'var(--text-primary)', fontSize: 28, fontWeight: 700, letterSpacing: -0.4 }}>
               {heading}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+            <div className="flex items-center gap-2 mt-1">
               {loading ? (
                 <span style={{ color: 'var(--text-tertiary)', fontSize: 13 }}>Loading…</span>
               ) : (
@@ -66,7 +64,7 @@ const TasksList: React.FC<TasksListProps> = ({ tasks, goals, loading, selected, 
               )}
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+          <div className="flex gap-2 flex-shrink-0">
             <button style={{
               display: 'inline-flex', alignItems: 'center', gap: 6,
               padding: '8px 12px', borderRadius: 999,
@@ -80,7 +78,6 @@ const TasksList: React.FC<TasksListProps> = ({ tasks, goals, loading, selected, 
           </div>
         </div>
 
-        {/* Date strip — tapping a day triggers onSelect → parent refetches */}
         <DateStrip selected={selected} onSelect={onSelect} />
 
         <div style={{ padding: '0px 20px 18px' }}>
@@ -92,30 +89,24 @@ const TasksList: React.FC<TasksListProps> = ({ tasks, goals, loading, selected, 
           />
         </div>
 
-        <div style={{
-          padding: '4px 20px 10px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        }}>
-          <span style={{
-            color: 'var(--text-primary)', fontSize: 12.5, fontWeight: 700,
-            letterSpacing: 0.5, textTransform: 'uppercase',
-          }}>
+        <div className="flex items-center justify-between" style={{ padding: '4px 20px 10px' }}>
+          <span style={{ color: 'var(--text-primary)', fontSize: 12.5, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase' }}>
             Pending{' '}
             <span style={{ color: 'var(--text-tertiary)', fontWeight: 600 }}>
-              · {loading ? '—' : tasks.filter(t => !(t.done || t.completed)).length}
+              · {loading ? '—' : pending.length}
             </span>
           </span>
         </div>
       </div>
 
-      {/* ── Task list ─────────────────────────────────────────────────── */}
+      {/* Task list */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '0 20px 140px', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         {loading ? (
-          /* Skeleton rows */
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          <div className="flex flex-col gap-px">
             {[1, 2, 3].map(i => (
               <div key={i} style={{
-                height: 64, borderRadius: i === 1 ? '12px 12px 0 0' : i === 3 ? '0 0 12px 12px' : 0,
+                height: 64,
+                borderRadius: i === 1 ? '12px 12px 0 0' : i === 3 ? '0 0 12px 12px' : 0,
                 background: 'var(--surface)',
                 border: '1px solid var(--border)',
                 borderBottom: i < 3 ? 'none' : '1px solid var(--border)',
@@ -130,7 +121,7 @@ const TasksList: React.FC<TasksListProps> = ({ tasks, goals, loading, selected, 
             {tasks.map((t, i) => (
               <div key={t.id} style={{ borderBottom: i === tasks.length - 1 ? 'none' : '1px solid var(--border)' }}>
                 <TaskRow
-                  task={{ ...t, title: t.name || t.title, due: t.date || t.due, done: t.completed ?? t.done, tags: t.tags || [] }}
+                  task={t}
                   goal={goals.find(g => g.id === t.goalId)}
                   onToggle={() => onToggleTask(t.id)}
                 />
@@ -140,9 +131,7 @@ const TasksList: React.FC<TasksListProps> = ({ tasks, goals, loading, selected, 
         ) : (
           <Card pad={28} style={{ textAlign: 'center' }}>
             <Icon name="sparkle" size={26} color="var(--text-tertiary)" style={{ display: 'inline-block' }} />
-            <div style={{ color: 'var(--text-primary)', fontSize: 14, fontWeight: 600, marginTop: 10 }}>
-              Nothing scheduled
-            </div>
+            <div style={{ color: 'var(--text-primary)', fontSize: 14, fontWeight: 600, marginTop: 10 }}>Nothing scheduled</div>
             <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginTop: 4 }}>
               Tasks for this day will appear here when synced.
             </div>
@@ -154,32 +143,41 @@ const TasksList: React.FC<TasksListProps> = ({ tasks, goals, loading, selected, 
 };
 
 // ── TasksPage ─────────────────────────────────────────────────────────────────
-// Owns the selected-date state. When the date changes, useTasks re-fetches
-// only that day's tasks from the backend — no full-table scan.
 
 const TasksPage: React.FC = () => {
   const { goals, refetchGoals } = useAppContext();
   const todayKey = STRIP_DAYS.find(d => d.offset === 0)?.key || getLocalYMD();
   const [selectedDate, setSelectedDate] = useState(todayKey);
 
-  // Each unique selectedDate gets its own date-scoped fetch
-  const { tasks, loading, refetch: refetchLocalTasks } = useTasks(selectedDate);
+  const { tasks: rawTasks, loading, refetch: refetchLocalTasks } = useTasks(selectedDate);
 
-  // Toggle task: patch via API, then refresh only local (date-filtered) list
-  // and goal progress. We do NOT go through AppContext.toggleTask because that
-  // looks up the task in AppContext's own today-only list — which may not
-  // contain tasks from other dates the user is viewing.
+  // Map raw task shape from useTasks to the UI Task interface
+  const tasks: Task[] = rawTasks.map(t => ({
+    id: t.id,
+    title: t.name,
+    goalId: '',
+    due: t.date,
+    tags: t.tags,
+    done: t.completed,
+    source: 'TickTick',
+    isRecurring: t.isRecurring || false,
+    repeatFlag: t.repeatFlag || '',
+    points: t.points || 0,
+    minVersion: t.minVersion || '',
+    completedMin: t.completedMin || false,
+  }));
+
   const handleToggle = useCallback(async (id: string) => {
-    const task = tasks.find((t: any) => t.id === id);
+    const task = rawTasks.find(t => t.id === id);
     if (!task) return;
     try {
       await api.patch(`/tasks/${id}`, { completed: !task.completed });
-      refetchLocalTasks();  // update this page's list
-      refetchGoals();       // update goal progress badges
+      refetchLocalTasks();
+      refetchGoals();
     } catch (e) {
       console.error(e);
     }
-  }, [tasks, refetchLocalTasks, refetchGoals]);
+  }, [rawTasks, refetchLocalTasks, refetchGoals]);
 
   return (
     <TasksList

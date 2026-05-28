@@ -10,21 +10,23 @@ export interface GoalLog {
 export interface Goal {
   id: string;
   title: string;
-  startDate: string;     // YYYY-MM-DD
-  deadline: string;      // YYYY-MM-DD
-  category: string;      // Health, Career, Learning, etc.
-  targetFrequency: number; // e.g. 5 times per week
-  targetCount: number;     // total sessions to achieve (0 = derive from frequency)
-  priority: string;      // High, Medium, Low
+  startDate: string;
+  deadline: string;
+  category: string;
+  targetFrequency: number;
+  targetCount: number;
+  priority: string;
   archived: boolean;
   linkedTaskIds: string[];
   linkedTaskNames: string[];
-  manualLogs: (string | GoalLog)[];  // string is for legacy
+  manualLogs: (string | GoalLog)[];
   createdAt: string;
   done?: number;
   total?: number;
   pct?: number;
   logs?: GoalLog[];
+  linkedSeriesIds?: string[];
+  linkedSeries?: unknown[];
 }
 
 export const daysUntil = (dateStr: string) => {
@@ -36,15 +38,23 @@ export const daysUntil = (dateStr: string) => {
 
 export const useGoals = () => {
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchGoals = useCallback(async () => {
+    setError(null);
     try {
       const res = await api.get('/goals');
-      // Backend now returns linkedTaskIds as string array and logs instead of manualLogs
-      // For compatibility with UI, we map logs to manualLogs
-      setGoals(res.data.map((g: any) => ({ ...g, linkedTaskNames: g.linkedTaskNames || [], linkedRecurringNames: g.linkedRecurringNames || [], targetCount: g.targetCount ?? 0, manualLogs: g.logs || [] })));
+      setGoals(res.data.map((g: Goal) => ({
+        ...g,
+        linkedTaskNames: g.linkedTaskNames || [],
+        linkedRecurringNames: (g as unknown as Record<string, unknown>).linkedRecurringNames || [],
+        targetCount: g.targetCount ?? 0,
+        manualLogs: g.logs || [],
+      })));
     } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to load goals.';
       console.error(err);
+      setError(msg);
     }
   }, []);
 
@@ -56,29 +66,45 @@ export const useGoals = () => {
     try {
       await api.post('/goals', input);
       fetchGoals();
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to create goal.';
+      console.error(err);
+      setError(msg);
+    }
   }, [fetchGoals]);
 
   const updateGoal = useCallback(async (id: string, updates: Partial<Goal>) => {
     try {
       await api.patch(`/goals/${id}`, updates);
       fetchGoals();
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to update goal.';
+      console.error(err);
+      setError(msg);
+    }
   }, [fetchGoals]);
 
   const deleteGoal = useCallback(async (id: string) => {
     try {
       await api.delete(`/goals/${id}`);
       fetchGoals();
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to delete goal.';
+      console.error(err);
+      setError(msg);
+    }
   }, [fetchGoals]);
 
   const logProgress = useCallback(async (goalId: string, effortMinutes: number = 15, notes: string = '') => {
     try {
       await api.post(`/goals/${goalId}/log`, { effortMinutes, notes });
       fetchGoals();
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to log progress.';
+      console.error(err);
+      setError(msg);
+    }
   }, [fetchGoals]);
 
-  return { goals, addGoal, updateGoal, deleteGoal, logProgress, refetch: fetchGoals };
+  return { goals, error, addGoal, updateGoal, deleteGoal, logProgress, refetch: fetchGoals };
 };

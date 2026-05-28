@@ -9,33 +9,27 @@ const Layout: React.FC = () => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div style={{
-      width: '100vw', height: '100vh',
-      display: 'flex', flexDirection: 'column',
-      position: 'relative',
-    }}>
-      {/* Top Bar for Sidebar toggle */}
-      <div style={{
-        display: 'flex', alignItems: 'center',
-        padding: '16px 20px 12px',
-      }}>
-        <button onClick={() => setSidebarOpen(true)} style={{
-          background: 'transparent', border: 'none', cursor: 'pointer',
-          display: 'grid', placeItems: 'center', padding: 0
-        }}>
+    <div className="flex flex-col" style={{ width: '100vw', height: '100vh', position: 'relative' }}>
+      {/* Top bar */}
+      <div className="flex items-center" style={{ padding: '16px 20px 12px' }}>
+        <button
+          onClick={() => setSidebarOpen(true)}
+          aria-label="Open menu"
+          style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'grid', placeItems: 'center', padding: 0 }}
+        >
           <Icon name="menu" size={24} color="var(--text-primary)" />
         </button>
       </div>
 
-      <div key={location.pathname} style={{
-        flex: 1,
-        overflowY: 'auto',
-        overflowX: 'hidden',
-      }} className="screen-scroll fade-up">
+      <div
+        key={location.pathname}
+        className="screen-scroll fade-up"
+        style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}
+      >
         <Outlet />
       </div>
-      <BottomNav />
 
+      <BottomNav />
       <Sidebar isOpen={isSidebarOpen} onClose={() => setSidebarOpen(false)} />
     </div>
   );

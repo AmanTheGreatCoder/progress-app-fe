@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Card } from '@shared/components/ui/Card';
 import { DateStrip, STRIP_DAYS } from '@shared/components/ui/DateStrip';
 import { Icon } from '@shared/components/ui/Icon';
@@ -134,11 +134,18 @@ const TasksList: React.FC<TasksListProps> = ({ tasks, loading, selected, onSelec
 // ── TasksPage ─────────────────────────────────────────────────────────────────
 
 const TasksPage: React.FC = () => {
-  const { refetchGoals } = useAppContext();
+  const { refetchGoals, refreshKey } = useAppContext();
   const todayKey = STRIP_DAYS.find(d => d.offset === 0)?.key || getLocalYMD();
   const [selectedDate, setSelectedDate] = useState(todayKey);
 
   const { tasks: rawTasks, loading, refetch: refetchLocalTasks } = useTasks(selectedDate);
+
+  // Re-fetch when pull-to-refresh fires (skip the very first render)
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) { isFirstRender.current = false; return; }
+    refetchLocalTasks();
+  }, [refreshKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const tasks: Task[] = rawTasks.map(t => ({
     id: t.id,

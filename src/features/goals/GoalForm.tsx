@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Icon } from '@shared/components/ui/Icon';
 import type { Goal } from '@shared/types';
 import { CATEGORIES, PRIORITIES } from '@shared/constants';
@@ -16,7 +16,7 @@ interface GoalFormDraft {
 interface GoalFormProps {
   initialGoal?: Goal;
   onBack: () => void;
-  onSave: (draft: GoalFormDraft) => void;
+  onSave: (draft: GoalFormDraft) => Promise<void>;
 }
 
 export const GoalForm: React.FC<GoalFormProps> = ({ initialGoal, onBack, onSave }) => {
@@ -30,6 +30,13 @@ export const GoalForm: React.FC<GoalFormProps> = ({ initialGoal, onBack, onSave 
   });
 
   const canSave = draft.title.trim().length > 0;
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = useCallback(async () => {
+    if (!canSave || saving) return;
+    setSaving(true);
+    try { await onSave(draft); } finally { setSaving(false); }
+  }, [canSave, saving, onSave, draft]);
 
   return (
     <div
@@ -50,12 +57,19 @@ export const GoalForm: React.FC<GoalFormProps> = ({ initialGoal, onBack, onSave 
         </span>
 
         <button
-          onClick={() => { if (canSave) onSave(draft); }}
+          onClick={handleSave}
+          disabled={!canSave || saving}
           className={[
-            'px-4 py-2 rounded-[10px] bg-c-primary border-none text-white text-sm font-semibold',
-            canSave ? 'cursor-pointer opacity-100' : 'cursor-default opacity-50',
+            'px-4 py-2 rounded-[10px] bg-c-primary border-none text-white text-sm font-semibold inline-flex items-center gap-2',
+            canSave && !saving ? 'cursor-pointer opacity-100' : 'cursor-default opacity-50',
           ].join(' ')}
         >
+          {saving && (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
+              style={{ transformOrigin: 'center', animation: 'spin 0.75s linear infinite' }}>
+              <circle cx="12" cy="12" r="9" strokeDasharray="32 56" />
+            </svg>
+          )}
           {initialGoal ? 'Save' : 'Create'}
         </button>
       </div>

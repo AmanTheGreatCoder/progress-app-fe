@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useCallback, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { Goal as UIGoal, Task as UITask, ManualLog } from '@shared/types';
 import type { Category, Priority } from '@shared/types';
@@ -16,10 +16,14 @@ interface AppContextType {
   syncTickTick: () => void;
   isSyncing: boolean;
   syncError: string | null;
-  updateGoal: (id: string, updates: Partial<HookGoal>) => void;
-  addGoal: (input: Pick<HookGoal, 'title' | 'startDate' | 'deadline' | 'category' | 'targetFrequency' | 'priority' | 'linkedTaskIds'>) => void;
+  updateGoal: (id: string, updates: Partial<HookGoal>) => Promise<void>;
+  addGoal: (input: Pick<HookGoal, 'title' | 'startDate' | 'deadline' | 'category' | 'targetFrequency' | 'priority' | 'linkedTaskIds'>) => Promise<void>;
   deleteGoal: (id: string) => void;
   refetchGoals: () => void;
+  /** Incremented each time pull-to-refresh fires. Components can watch this to re-fetch local data. */
+  refreshKey: number;
+  /** Called by pull-to-refresh in Layout; re-fetches goals + tasks and bumps refreshKey. */
+  triggerRefresh: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -28,6 +32,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const { goals, addGoal, updateGoal, deleteGoal, logProgress, refetch: refetchGoals } = useGoals();
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
   const { tasks: rawTasks, refetch: refetchTasks } = useTasks();
 
   const toggleTask = async (id: string) => {
@@ -45,6 +50,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const addLog = async (goalId: string, entry: ManualLog) => {
     await logProgress(goalId, entry.minutes, entry.note);
   };
+
+  const triggerRefresh = useCallback(async () => {
+    await Promise.all([refetchGoals(), refetchTasks()]);
+    setRefreshKey(k => k + 1);
+  }, [refetchGoals, refetchTasks]);
 
   const syncTickTick = async () => {
     setIsSyncing(true);
@@ -110,6 +120,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       addGoal,
       deleteGoal,
       refetchGoals,
+      refreshKey,
+      triggerRefresh,
     }}>
       {children}
     </AppContext.Provider>

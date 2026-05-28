@@ -359,7 +359,7 @@ const EarnedTasksList = ({ items }: { items: DayItem[] }) => {
 // Main component
 // ──────────────────────────────────────────────────────────────
 const Analytics: React.FC = () => {
-  const { goals } = useAppContext();
+  const { goals, refreshKey } = useAppContext();
   const todayKey = STRIP_DAYS.find(d => d.offset === 0)?.key || TODAY;
   const [selectedDate, setSelectedDate] = useState(todayKey);
   const [weekOffset, setWeekOffset] = useState(0);
@@ -376,7 +376,7 @@ const Analytics: React.FC = () => {
 
   useEffect(() => {
     const from = getLocalYMD(addDays(startMonday, -7));
-    const to   = getLocalYMD(addDays(endDay, 4));
+    const to = getLocalYMD(addDays(endDay, 4));
     api.get(`/tasks?from=${from}&to=${to}`).then(res => {
       const mapped: WeekTask[] = (res.data as Record<string, unknown>[]).map(t => ({
         title: (t.name as string) || '',
@@ -384,14 +384,14 @@ const Analytics: React.FC = () => {
         done: (t.completed as boolean) || false,
         completedMin: (t.completedMin as boolean) || false,
         goalId: '',
-        source: 'Notion',
+        source: 'Ticktick',
         tags: (t.tags as string[]) || [],
         points: (t.points as number) || 0,
       }));
       setWeekTasks(mapped);
     }).catch(console.error);
-  // weekOffset drives startMonday/endDay; listing it avoids stale closure
-  }, [weekOffset]); // eslint-disable-line react-hooks/exhaustive-deps
+    // weekOffset drives startMonday/endDay; refreshKey triggers re-fetch on pull-to-refresh
+  }, [weekOffset, refreshKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const dayInfo = getDayPoints(selectedDate, weekTasks, goals);
 
@@ -439,8 +439,24 @@ const Analytics: React.FC = () => {
   const delta = weekTotal - prevWeekTotal;
   const canForward = weekOffset < 0;
 
+  /** Select a date from the WeekChart bar (only if the date is in the DateStrip). */
   const handleSelectDay = (k: string) => {
     if (STRIP_DAYS.find(d => d.key === k)) setSelectedDate(k);
+  };
+
+  /**
+   * Select a date from the DateStrip and jump the weekly chart to the week
+   * that contains that date.
+   */
+  const handleDateSelect = (dateKey: string) => {
+    setSelectedDate(dateKey);
+    // Compute how many weeks before/after currentMonday the selected date's Monday is
+    const sel     = new Date(dateKey + 'T00:00:00');
+    const selDow  = sel.getDay();
+    const selMonday = addDays(sel, -((selDow + 6) % 7)); // Monday of selected week
+    const diffDays  = Math.round((selMonday.getTime() - currentMonday.getTime()) / 86400000);
+    const newOffset = Math.round(diffDays / 7);
+    setWeekOffset(Math.min(0, newOffset)); // never jump into a future week
   };
 
   const heroLabel = dateMeta.offset === 0 ? 'today'
@@ -459,7 +475,7 @@ const Analytics: React.FC = () => {
             Morning, Alex
           </div>
         </div>
-        <DateStrip selected={selectedDate} onSelect={setSelectedDate} />
+        <DateStrip selected={selectedDate} onSelect={handleDateSelect} />
       </div>
 
       <div
@@ -528,10 +544,10 @@ const Analytics: React.FC = () => {
 
             <div className="grid grid-cols-4 gap-[10px] mt-4 pt-4 border-t border-c-border">
               {[
-                { l: 'Total',    v: weekTotal,                          c: 'var(--text-primary)' },
-                { l: 'Avg/day',  v: dailyAvg,                           c: 'var(--text-primary)' },
-                { l: 'Goals hit',v: `${daysHitGoal}/${realDays.length || 7}`, c: daysHitGoal > 0 ? 'var(--success)' : 'var(--text-primary)' },
-                { l: 'vs last',  v: `${delta >= 0 ? '+' : ''}${delta}`, c: delta >= 0 ? 'var(--success)' : '#FF6B7A' },
+                { l: 'Total', v: weekTotal, c: 'var(--text-primary)' },
+                { l: 'Avg/day', v: dailyAvg, c: 'var(--text-primary)' },
+                { l: 'Goals hit', v: `${daysHitGoal}/${realDays.length || 7}`, c: daysHitGoal > 0 ? 'var(--success)' : 'var(--text-primary)' },
+                { l: 'vs last', v: `${delta >= 0 ? '+' : ''}${delta}`, c: delta >= 0 ? 'var(--success)' : '#FF6B7A' },
               ].map((s, i) => (
                 <div key={i}>
                   <div className="text-c-text2 text-3xs font-bold tracking-label uppercase">{s.l}</div>

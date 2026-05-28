@@ -3,10 +3,13 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { BottomNav } from './BottomNav';
 import { Sidebar } from './Sidebar';
 import { Icon } from '@shared/components/ui/Icon';
+import { PullToRefresh } from '@shared/components/ui/PullToRefresh';
+import { useAppContext } from '@shared/context/AppContext';
 
 const Layout: React.FC = () => {
   const location = useLocation();
   const [isSidebarOpen, setSidebarOpen] = useState(false);
+  const { triggerRefresh } = useAppContext();
 
   return (
     <div className="flex flex-col w-screen h-screen relative">
@@ -21,12 +24,13 @@ const Layout: React.FC = () => {
         </button>
       </div>
 
-      <div
+      <PullToRefresh
         key={location.pathname}
-        className="screen-scroll fade-up flex-1 overflow-y-auto overflow-x-hidden"
+        onRefresh={triggerRefresh}
+        className="screen-scroll fade-up overflow-x-hidden"
       >
         <Outlet />
-      </div>
+      </PullToRefresh>
 
       <BottomNav />
       <Sidebar isOpen={isSidebarOpen} onClose={() => setSidebarOpen(false)} />

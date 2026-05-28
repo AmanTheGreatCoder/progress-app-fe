@@ -23,11 +23,11 @@ const GoalsPage: React.FC = () => {
       <GoalForm
         initialGoal={initialGoal}
         onBack={() => setSearchParams(goalId ? { id: goalId } : {})}
-        onSave={draft => {
+        onSave={async draft => {
           if (editGoalId) {
-            updateGoal(editGoalId, draft as unknown as Partial<HookGoal>);
+            await updateGoal(editGoalId, draft as unknown as Partial<HookGoal>);
           } else {
-            addGoal(draft as unknown as Parameters<typeof addGoal>[0]);
+            await addGoal(draft as unknown as Parameters<typeof addGoal>[0]);
           }
           setSearchParams(goalId ? { id: goalId } : {});
         }}

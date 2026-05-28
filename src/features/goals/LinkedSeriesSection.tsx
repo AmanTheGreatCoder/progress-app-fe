@@ -17,6 +17,7 @@ export const LinkedSeriesSection: React.FC<LinkedSeriesSectionProps> = ({ goal, 
   const [seriesItems, setSeriesItems] = useState<TaskSeriesSummary[]>([]);
   const [expandedSeriesId, setExpandedSeriesId] = useState<string | null>(null);
   const [seriesInstances, setSeriesInstances] = useState<Record<string, Record<string, unknown>[]>>({});
+  const [savingSeriesId, setSavingSeriesId] = useState<string | null>(null);
 
   useEffect(() => {
     api.get('/tasks/series').then(res => setSeriesItems(res.data)).catch(() => {});
@@ -116,20 +117,33 @@ export const LinkedSeriesSection: React.FC<LinkedSeriesSectionProps> = ({ goal, 
                         )}
                       </div>
                       <button
-                        onClick={() => {
-                          const newIds = isLinked
-                            ? (goal.linkedSeriesIds || []).filter(id => id !== series.id)
-                            : [...(goal.linkedSeriesIds || []), series.id];
-                          onUpdateGoal(goal.id, { linkedSeriesIds: newIds });
+                        disabled={savingSeriesId !== null}
+                        onClick={async () => {
+                          if (savingSeriesId !== null) return;
+                          setSavingSeriesId(series.id);
+                          try {
+                            const newIds = isLinked
+                              ? (goal.linkedSeriesIds || []).filter(id => id !== series.id)
+                              : [...(goal.linkedSeriesIds || []), series.id];
+                            await onUpdateGoal(goal.id, { linkedSeriesIds: newIds });
+                          } finally {
+                            setSavingSeriesId(null);
+                          }
                         }}
                         className={[
-                          'inline-flex items-center gap-1 py-1.5 px-3.5 rounded-chip flex-shrink-0 text-xs font-bold cursor-pointer',
+                          'inline-flex items-center gap-1.5 py-1.5 px-3.5 rounded-chip flex-shrink-0 text-xs font-bold',
+                          savingSeriesId === series.id ? 'opacity-60 cursor-default' : 'cursor-pointer',
                           isLinked
                             ? 'bg-success-muted text-c-success border border-success-glow'
                             : 'bg-c-primary text-white border-none',
                         ].join(' ')}
                       >
-                        {isLinked ? '✓ Linked' : 'Link'}
+                        {savingSeriesId === series.id ? (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
+                            style={{ transformOrigin: 'center', animation: 'spin 0.75s linear infinite' }}>
+                            <circle cx="12" cy="12" r="9" strokeDasharray="32 56" />
+                          </svg>
+                        ) : isLinked ? '✓ Linked' : 'Link'}
                       </button>
                     </div>
                   );

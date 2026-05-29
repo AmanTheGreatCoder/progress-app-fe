@@ -54,7 +54,7 @@ const INITIAL_TASKS: Task[] = [
   { id: 't14', name: 'Vocabulary practice', goalId: 'g5', tags: [], dueDateStr: 'Yesterday', status: 'Overdue', isRecurring: false, completed: false },
 ];
 
-export default function TasksScreen() {
+export default function TasksScreen({ onNavigate }: any) {
   const [tasks, setTasks] = useState<Task[]>(INITIAL_TASKS);
   const [viewMode, setViewMode] = useState<ViewMode>('Today');
   const [showSyncBanner, setShowSyncBanner] = useState(true);
@@ -217,11 +217,11 @@ export default function TasksScreen() {
 
       {/* Bottom Nav */}
       <nav className="absolute bottom-0 w-full h-[80px] bg-card border-t border-border flex items-center justify-between px-6 pb-safe z-40">
-        <NavItem icon={Home} label="Today" />
-        <NavItem icon={Target} label="Goals" />
-        <NavItem icon={Check} label="Tasks" active />
-        <NavItem icon={BarChart2} label="Analytics" />
-        <NavItem icon={User} label="Profile" />
+        <NavItem icon={Home} label="Today" onClick={() => onNavigate('Today')} />
+        <NavItem icon={Target} label="Goals" onClick={() => onNavigate('Goals')} />
+        <NavItem icon={Check} label="Tasks" active onClick={() => onNavigate('Tasks')} />
+        <NavItem icon={BarChart2} label="Analytics" onClick={() => onNavigate('Analytics')} />
+        <NavItem icon={User} label="Profile" onClick={() => onNavigate('Profile')} />
       </nav>
 
       {/* Add Task Bottom Sheet */}
@@ -436,9 +436,9 @@ function AddTaskSheet({ onClose, onTouchStart, onTouchMove, onTouchEnd, sheetY }
   );
 }
 
-function NavItem({ icon: Icon, label, active }: any) {
+function NavItem({ icon: Icon, label, active, onClick }: any) {
   return (
-    <button className={`flex flex-col items-center justify-center gap-1 min-w-[64px] h-full ${active ? 'text-foreground' : 'text-muted-foreground'}`}>
+    <button onClick={onClick} className={`flex flex-col items-center justify-center gap-1 min-w-[64px] h-full ${active ? 'text-foreground' : 'text-muted-foreground'}`}>
       <Icon size={20} className={active ? 'text-foreground' : 'text-muted-foreground'} />
       <span className="text-[11px] font-[500] leading-none">{label}</span>
     </button>

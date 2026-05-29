@@ -62,7 +62,7 @@ const CATEGORY_BG_COLORS: Record<Category, string> = { Health: 'bg-emerald-500/1
 const PRIORITY_COLORS: Record<Priority, string> = { High: 'text-destructive bg-destructive/10', Medium: 'text-amber-600 bg-amber-500/10', Low: 'text-muted-foreground bg-muted' };
 const PRIORITY_WEIGHT = { High: 3, Medium: 2, Low: 1 };
 
-export default function GoalsScreen() {
+export default function GoalsScreen({ onNavigate, onGoalClick }: any) {
   const [goals, setGoals] = useState<Goal[]>(INITIAL_GOALS);
   const [activeFilter, setActiveFilter] = useState<Category | 'All'>('All');
   const [activeSort, setActiveSort] = useState<'Default' | 'Streak' | 'Recent'>('Default');
@@ -163,6 +163,7 @@ export default function GoalsScreen() {
               key={goal.id}
               goal={goal}
               onLongPress={() => handleLongPress(goal.id)}
+              onClick={onGoalClick}
             />
           ))}
           {displayedGoals.length === 0 && (
@@ -217,11 +218,11 @@ export default function GoalsScreen() {
 
       {/* Bottom Nav */}
       <nav className="absolute bottom-0 w-full h-[80px] bg-card border-t border-border flex items-center justify-between px-6 pb-safe z-40">
-        <NavItem icon={Home} label="Today" />
-        <NavItem icon={Target} label="Goals" active />
-        <NavItem icon={Check} label="Tasks" />
-        <NavItem icon={BarChart2} label="Analytics" />
-        <NavItem icon={User} label="Profile" />
+        <NavItem icon={Home} label="Today" onClick={() => onNavigate('Today')} />
+        <NavItem icon={Target} label="Goals" active onClick={() => onNavigate('Goals')} />
+        <NavItem icon={Check} label="Tasks" onClick={() => onNavigate('Tasks')} />
+        <NavItem icon={BarChart2} label="Analytics" onClick={() => onNavigate('Analytics')} />
+        <NavItem icon={User} label="Profile" onClick={() => onNavigate('Profile')} />
       </nav>
 
       {/* Context Menu Bottom Sheet */}
@@ -277,7 +278,7 @@ export default function GoalsScreen() {
 
 // Subcomponents
 
-function GoalCard({ goal, onLongPress }: { goal: Goal, onLongPress: () => void }) {
+function GoalCard({ goal, onLongPress, onClick }: { goal: Goal, onLongPress: () => void, onClick?: () => void }) {
   const IconCmp = (ICONS as any)[goal.iconName] || Target;
 
   // Fake progress calculation
@@ -302,6 +303,7 @@ function GoalCard({ goal, onLongPress }: { goal: Goal, onLongPress: () => void }
   return (
     <div
       className="relative bg-card border border-border rounded-[12px] p-4 flex flex-col shadow-[0_1px_2px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.1)] overflow-hidden active:scale-[0.98] transition-transform select-none"
+      onClick={onClick}
       onTouchStart={startPress}
       onTouchEnd={cancelPress}
       onTouchMove={cancelPress}
@@ -479,9 +481,9 @@ function AddGoalSheet({ onClose, onTouchStart, onTouchMove, onTouchEnd, sheetY }
   );
 }
 
-function NavItem({ icon: Icon, label, active }: any) {
+function NavItem({ icon: Icon, label, active, onClick }: any) {
   return (
-    <button className={`flex flex-col items-center justify-center gap-1 min-w-[64px] h-full ${active ? 'text-foreground' : 'text-muted-foreground'}`}>
+    <button onClick={onClick} className={`flex flex-col items-center justify-center gap-1 min-w-[64px] h-full ${active ? 'text-foreground' : 'text-muted-foreground'}`}>
       <Icon size={20} className={active ? 'text-foreground' : 'text-muted-foreground'} />
       <span className="text-[11px] font-[500] leading-none">{label}</span>
     </button>

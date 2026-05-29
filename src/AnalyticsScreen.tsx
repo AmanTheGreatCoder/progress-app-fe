@@ -87,7 +87,7 @@ const ACCOMPLISHMENTS = [
   }
 ];
 
-export default function AnalyticsScreen() {
+export default function AnalyticsScreen({ onNavigate }: any) {
   const [timeRange, setTimeRange] = useState<TimeRange>('This Week');
   const [activeTooltip, setActiveTooltip] = useState<{ x: number; y: number; points: number; tasks: number } | null>(null);
   const [expandedLogs, setExpandedLogs] = useState<Record<string, boolean>>({ Today: true });
@@ -374,11 +374,11 @@ export default function AnalyticsScreen() {
 
       {/* Bottom Nav */}
       <nav className="absolute bottom-0 w-full h-[80px] bg-card border-t border-border flex items-center justify-between px-6 pb-safe z-40">
-        <NavItem icon={Home} label="Today" />
-        <NavItem icon={Target} label="Goals" />
-        <NavItem icon={Check} label="Tasks" />
-        <NavItem icon={BarChart2} label="Analytics" active />
-        <NavItem icon={User} label="Profile" />
+        <NavItem icon={Home} label="Today" onClick={() => onNavigate('Today')} />
+        <NavItem icon={Target} label="Goals" onClick={() => onNavigate('Goals')} />
+        <NavItem icon={Check} label="Tasks" onClick={() => onNavigate('Tasks')} />
+        <NavItem icon={BarChart2} label="Analytics" active onClick={() => onNavigate('Analytics')} />
+        <NavItem icon={User} label="Profile" onClick={() => onNavigate('Profile')} />
       </nav>
     </div>
   );
@@ -403,9 +403,9 @@ function ScoreCard({ title, value, change, icon: Icon }: any) {
   );
 }
 
-function NavItem({ icon: Icon, label, active }: any) {
+function NavItem({ icon: Icon, label, active, onClick }: any) {
   return (
-    <button className={`flex flex-col items-center justify-center gap-1 min-w-[64px] h-full ${active ? 'text-foreground' : 'text-muted-foreground'}`}>
+    <button onClick={onClick} className={`flex flex-col items-center justify-center gap-1 min-w-[64px] h-full ${active ? 'text-foreground' : 'text-muted-foreground'}`}>
       <Icon size={20} className={active ? 'text-foreground' : 'text-muted-foreground'} />
       <span className="text-[11px] font-[500] leading-none">{label}</span>
     </button>

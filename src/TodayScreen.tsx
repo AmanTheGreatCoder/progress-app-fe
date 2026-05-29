@@ -30,7 +30,7 @@ const INITIAL_TASKS = [
   { id: 't6', goalId: '2', title: 'Take notes', minVersion: 'Highlight key points', completed: false },
 ];
 
-export default function TodayScreen() {
+export default function TodayScreen({ onNavigate }: any) {
   const [tasks, setTasks] = useState(INITIAL_TASKS);
   const [points, setPoints] = useState(47);
   const targetPoints = 100;
@@ -208,11 +208,11 @@ export default function TodayScreen() {
         </button>
 
         <nav className="absolute bottom-0 w-full h-[80px] bg-card border-t border-border flex items-center justify-between px-6 pb-safe z-40">
-          <NavItem icon={Home} label="Today" active />
-          <NavItem icon={Target} label="Goals" />
-          <NavItem icon={Check} label="Tasks" />
-          <NavItem icon={BarChart2} label="Analytics" />
-          <NavItem icon={User} label="Profile" />
+          <NavItem icon={Home} label="Today" active onClick={() => onNavigate('Today')} />
+          <NavItem icon={Target} label="Goals" onClick={() => onNavigate('Goals')} />
+          <NavItem icon={Check} label="Tasks" onClick={() => onNavigate('Tasks')} />
+          <NavItem icon={BarChart2} label="Analytics" onClick={() => onNavigate('Analytics')} />
+          <NavItem icon={User} label="Profile" onClick={() => onNavigate('Profile')} />
         </nav>
 
         {isLogSheetOpen && (
@@ -328,9 +328,9 @@ function TaskRow({ task, onToggle, goals }: any) {
   );
 }
 
-function NavItem({ icon: Icon, label, active }: any) {
+function NavItem({ icon: Icon, label, active, onClick }: any) {
   return (
-    <button className={`flex flex-col items-center justify-center gap-1 min-w-[64px] h-full ${active ? 'text-foreground' : 'text-muted-foreground'}`}>
+    <button onClick={onClick} className={`flex flex-col items-center justify-center gap-1 min-w-[64px] h-full ${active ? 'text-foreground' : 'text-muted-foreground'}`}>
       <Icon size={20} className={active ? 'text-foreground' : 'text-muted-foreground'} />
       <span className="text-[11px] font-[500] leading-none">{label}</span>
     </button>

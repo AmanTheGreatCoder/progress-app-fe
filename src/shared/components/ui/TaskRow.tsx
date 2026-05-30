@@ -27,12 +27,11 @@ export const TaskRow: React.FC<TaskRowProps> = ({ task, goals, isLast = false, o
       <div
         className="relative z-10 w-full bg-card p-4 flex gap-3 transition-transform duration-200 active:bg-secondary/50"
       >
-        <button 
-          onClick={onToggle} 
-          className={`mt-0.5 shrink-0 flex items-center justify-center w-5 h-5 rounded-full border-[1.5px] transition-colors ${task.completed ? 'bg-primary border-primary text-primary-foreground' : 'border-muted-foreground/30 text-transparent hover:border-primary/50'}`}
+        <div
+          className={`mt-0.5 shrink-0 flex items-center justify-center w-5 h-5 rounded-full border-[1.5px] pointer-events-none select-none ${task.completed ? 'bg-primary border-primary text-primary-foreground' : 'border-muted-foreground/30 text-transparent'}`}
         >
           <Check size={12} strokeWidth={3} />
-        </button>
+        </div>
 
         <div className={`flex-1 min-w-0 ${task.completed ? 'opacity-50 line-through' : ''}`}>
           {goal && (

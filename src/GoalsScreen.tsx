@@ -128,8 +128,9 @@ export default function GoalsScreen() {
               onClick={() => navigate(`/goals/${goal.id}`)}
             />
           ))}
+
           {displayedGoals.length === 0 && (
-            <div className="text-center py-10 text-muted-foreground text-[14px] font-[500]">
+            <div className="text-center py-6 text-muted-foreground text-[14px] font-[500]">
               No active goals found.
             </div>
           )}
@@ -216,10 +217,8 @@ export default function GoalsScreen() {
 function GoalCard({ goal, onLongPress, onClick }: { goal: any, onLongPress: () => void, onClick?: () => void }) {
   const IconCmp = (ICONS as any)[goal.icon] || Target;
 
-  const start = new Date(goal.start).getTime();
   const end = new Date(goal.end).getTime();
   const now = Date.now();
-  const progressPercent = Math.max(0, Math.min(100, ((now - start) / ((end - start) || 1)) * 100));
 
   const remainingMs = end - now;
   let remainingText = '';
@@ -234,9 +233,17 @@ function GoalCard({ goal, onLongPress, onClick }: { goal: any, onLongPress: () =
   const startPress = () => { pressTimer = setTimeout(onLongPress, 500); };
   const cancelPress = () => { clearTimeout(pressTimer); };
 
-  const streak = goal.streak || goal.done || 0;
+  const streak = goal.streak || 0;
   const category = goal.category || 'General';
   const priority = goal.priority || 'Medium';
+
+  // Use task-completion progress when linked series exist, otherwise fall back to time-based
+  const hasLinkedTasks = (goal.linkedSeries?.length ?? 0) > 0 || (goal.linkedRecurringNames?.length ?? 0) > 0;
+  const taskDone: number = goal.done ?? 0;
+  const taskTotal: number = goal.total ?? 0;
+  const progressPercent: number = hasLinkedTasks
+    ? (goal.pct ?? 0)
+    : Math.max(0, Math.min(100, ((now - new Date(goal.start).getTime()) / ((end - new Date(goal.start).getTime()) || 1)) * 100));
 
   return (
     <div
@@ -281,7 +288,9 @@ function GoalCard({ goal, onLongPress, onClick }: { goal: any, onLongPress: () =
 
         <div className="flex justify-between items-center mb-1.5">
           <span className="text-[12px] font-[700] text-foreground">
-            {Math.round(progressPercent)}% complete
+            {hasLinkedTasks
+              ? `${taskDone} / ${taskTotal} days`
+              : `${Math.round(progressPercent)}% complete`}
           </span>
           <span className={`text-[12px] font-[700] ${remainingMs < (7 * 24 * 60 * 60 * 1000) && remainingMs > 0 ? 'text-orange-500' : 'text-muted-foreground'}`}>
             {remainingText}
@@ -290,14 +299,20 @@ function GoalCard({ goal, onLongPress, onClick }: { goal: any, onLongPress: () =
 
         <div className="w-full h-2 bg-secondary rounded-full overflow-hidden mb-2">
           <div
-            className={`h-full rounded-full ${CATEGORY_COLORS[category] || 'bg-primary'}`}
+            className={`h-full rounded-full ${CATEGORY_COLORS[category] || 'bg-primary'} transition-all duration-700`}
             style={{ width: `${progressPercent}%` }}
           />
         </div>
 
-        <div className="text-[12px] font-[600] text-muted-foreground text-right mt-1">
-          Target: {goal.targetFrequency || 0} / week
-        </div>
+        {hasLinkedTasks ? (
+          <div className="text-[12px] font-[600] text-muted-foreground text-right mt-1">
+            {progressPercent}% achieved
+          </div>
+        ) : (
+          <div className="text-[12px] font-[600] text-muted-foreground text-right mt-1">
+            Target: {goal.targetFrequency || 0} / week
+          </div>
+        )}
       </div>
     </div>
   );

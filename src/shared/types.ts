@@ -16,6 +16,8 @@ export interface Goal {
   priority: string;
   start: string;
   end: string;
+  startDate?: string;
+  deadline?: string;
   icon: string;
   streak: number;
   archived: boolean;
@@ -27,6 +29,10 @@ export interface Goal {
   linkedSeries: TaskSeriesSummary[];
   // Legacy
   linkedRecurringNames: string[];
+  // Backend-computed progress fields
+  done?: number;
+  total?: number;
+  pct?: number;
 }
 type TaskStatus = 'Overdue' | 'Today' | 'Upcoming' | 'Recurring' | 'Completed';
 

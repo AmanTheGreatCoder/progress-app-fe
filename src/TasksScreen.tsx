@@ -61,6 +61,10 @@ export default function TasksScreen() {
           </div>
         </div>
 
+        <p className="text-[13px] font-[500] text-muted-foreground">
+          {new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+        </p>
+
         <DateStrip selected={selectedDate} onSelect={setSelectedDate} />
 
         <div className="flex overflow-x-auto hide-scrollbar gap-2 -mx-4 pb-1 px-4">

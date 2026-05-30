@@ -1,309 +1,359 @@
+import React from 'react';
 import {
   ChevronDown, ChevronUp,
-  Clock,
-  Flame,
-  Trophy
+  ChevronLeft, ChevronRight,
+  Flame, Trophy, CheckCircle2, TrendingUp, Zap,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { api } from '@/api';
 import { BottomNav } from '@/shared/components/layout/BottomNav';
 
-// --- Types ---
-type TimeRange = 'This Week' | 'Last Week' | 'This Month';
-type Category = 'Health' | 'Career' | 'Learning' | 'Wellness' | 'Finance';
-type DayData = { day: string; points: number; tasks: number; isToday?: boolean; isFuture?: boolean };
+// ─── Constants ───────────────────────────────────────────
+const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+const TARGET_POINTS = 120;
 
-// --- Mock Data ---
-const CATEGORY_COLORS: Record<Category, string> = {
-  Health: 'bg-emerald-500',
-  Career: 'bg-blue-500',
-  Learning: 'bg-purple-500',
-  Wellness: 'bg-pink-500',
-  Finance: 'bg-amber-500'
+const TAG_COLORS: Record<string, { bg: string; text: string }> = {
+  work:      { bg: 'bg-blue-500/10',   text: 'text-blue-600 dark:text-blue-400' },
+  health:    { bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400' },
+  personal:  { bg: 'bg-purple-500/10', text: 'text-purple-600 dark:text-purple-400' },
+  challenge: { bg: 'bg-orange-500/10', text: 'text-orange-600 dark:text-orange-400' },
+  hard:      { bg: 'bg-red-500/10',    text: 'text-red-600 dark:text-red-400' },
+  medium:    { bg: 'bg-amber-500/10',  text: 'text-amber-600 dark:text-amber-400' },
+  easy:      { bg: 'bg-secondary',     text: 'text-muted-foreground' },
 };
 
-const CATEGORY_TEXT: Record<Category, string> = {
-  Health: 'text-emerald-600 dark:text-emerald-400',
-  Career: 'text-blue-600 dark:text-blue-400',
-  Learning: 'text-purple-600 dark:text-purple-400',
-  Wellness: 'text-pink-600 dark:text-pink-400',
-  Finance: 'text-amber-600 dark:text-amber-400'
-};
+// ─── Helpers ─────────────────────────────────────────────
+function getWeekDates(offset: number): string[] {
+  const today = new Date();
+  const dow = (today.getDay() + 6) % 7; // Mon = 0
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - dow + offset * 7);
+  monday.setHours(0, 0, 0, 0);
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    return d.toISOString().split('T')[0];
+  });
+}
 
-const CATEGORY_BG: Record<Category, string> = {
-  Health: 'bg-emerald-500/10',
-  Career: 'bg-blue-500/10',
-  Learning: 'bg-purple-500/10',
-  Wellness: 'bg-pink-500/10',
-  Finance: 'bg-amber-500/10'
-};
-
-// "Last Week" mock
-const LAST_WEEK_DATA: DayData[] = [
-  { day: 'M', points: 70, tasks: 10 },
-  { day: 'T', points: 95, tasks: 12 },
-  { day: 'W', points: 88, tasks: 11 },
-  { day: 'T', points: 105, tasks: 15 },
-  { day: 'F', points: 115, tasks: 16 },
-  { day: 'S', points: 60, tasks: 8 },
-  { day: 'S', points: 50, tasks: 6 }
-];
-
-const ACCOMPLISHMENTS = [
-  {
-    dateStr: 'Today',
-    totalPoints: 95,
-    isExpanded: true,
-    tasks: [
-      { id: '1', name: 'Deep work: feature spec', goal: 'Career', time: '14:30', pts: 40 },
-      { id: '2', name: '30 min run', goal: 'Health', time: '07:00', pts: 30 },
-      { id: '3', name: 'Read chapter 5', goal: 'Learning', time: '06:15', pts: 25 }
-    ]
-  },
-  {
-    dateStr: 'Yesterday',
-    totalPoints: 80,
-    isExpanded: false,
-    tasks: [
-      { id: '4', name: 'Log expenses', goal: 'Finance', time: '19:00', pts: 20 },
-      { id: '5', name: 'Morning Run', goal: 'Health', time: '07:30', pts: 30 },
-      { id: '6', name: 'Weekly review', goal: 'Career', time: '10:00', pts: 30 }
-    ]
+function formatWeekLabel(dates: string[]): string {
+  const s = new Date(dates[0] + 'T00:00:00');
+  const e = new Date(dates[6] + 'T00:00:00');
+  const mo = (d: Date) => d.toLocaleDateString('en-US', { month: 'short' });
+  if (s.getMonth() === e.getMonth()) {
+    return `${mo(s)} ${s.getDate()} – ${e.getDate()}`;
   }
-];
+  return `${mo(s)} ${s.getDate()} – ${mo(e)} ${e.getDate()}`;
+}
 
+function formatDate(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00');
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+  if (d.getTime() === today.getTime()) return 'Today';
+  if (d.getTime() === yesterday.getTime()) return 'Yesterday';
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+function normTags(raw: unknown): string[] {
+  return Array.isArray(raw) ? raw : (raw ? String(raw).split(',').filter(Boolean) : []);
+}
+
+// ─── Main Screen ─────────────────────────────────────────
 export default function AnalyticsScreen() {
-  const [timeRange, setTimeRange] = useState<TimeRange>('This Week');
-  const [activeTooltip, setActiveTooltip] = useState<{ x: number; y: number; points: number; tasks: number } | null>(null);
-  const [expandedLogs, setExpandedLogs] = useState<Record<string, boolean>>({ Today: true });
-  const [filteredCategory, setFilteredCategory] = useState<Category | null>(null);
-  const [animateBars, setAnimateBars] = useState(false);
-  const [dashboard, setDashboard] = useState<any>(null);
+  const [weekOffset, setWeekOffset]   = useState(0);
+  const [dailyScores, setDailyScores] = useState<Record<string, number>>({});
+  const [streak, setStreak]           = useState(0);
+  const [weekTasks, setWeekTasks]     = useState<any[]>([]);
+  const [expandedDay, setExpandedDay] = useState<string | null>(null);
+  const [loadingTasks, setLoadingTasks] = useState(true);
+  const [activeBar, setActiveBar]     = useState<number | null>(null);
 
+  const today      = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const weekDates  = useMemo(() => getWeekDates(weekOffset), [weekOffset]);
+  const weekStart  = weekDates[0];
+  const weekEnd    = weekDates[6];
+  const isThisWeek = weekOffset === 0;
+
+  // Fetch dashboard once (for dailyScores + streak)
   useEffect(() => {
-    api.get('/dashboard').then(res => setDashboard(res.data)).catch(console.error);
-    const t = setTimeout(() => setAnimateBars(true), 100);
-    return () => clearTimeout(t);
-  }, [timeRange]);
+    api.get('/dashboard')
+      .then(res => {
+        setDailyScores(res.data.dailyScores ?? {});
+        setStreak(res.data.streak ?? 0);
+      })
+      .catch(console.error);
+  }, []);
 
-  const chartData = timeRange === 'This Week' ? (dashboard?.sortedDays?.map((d: any) => ({ day: d[0].slice(-5), points: d[1], tasks: d[2] })) || []) : LAST_WEEK_DATA;
-  const CATEGORY_BREAKDOWN = Object.entries(dashboard?.tagBreakdown || {}).map(([name, value]) => ({ name: name as Category, mins: value as number, label: `${Math.floor((value as number) / 60)}h ${(value as number) % 60}m` }));
-  const SUMMARY_STATS = {
-    completionRate: dashboard?.completionPct || 0,
-    activeStreaks: dashboard?.streak || 0,
-    totalLogged: dashboard?.totalView || 0,
-    perfectDays: dashboard?.highDone || 0
-  };
+  // Fetch tasks whenever the selected week changes
+  const fetchWeekTasks = useCallback(() => {
+    setLoadingTasks(true);
+    api.get(`/tasks?from=${weekStart}&to=${weekEnd}`)
+      .then(res => {
+        setWeekTasks(res.data ?? []);
+        // Auto-expand today if it's in the current week
+        if (isThisWeek) setExpandedDay(today);
+        else setExpandedDay(null);
+      })
+      .catch(console.error)
+      .finally(() => setLoadingTasks(false));
+  }, [weekStart, weekEnd, isThisWeek, today]);
 
-  const toggleLog = (dateStr: string) => {
-    setExpandedLogs(prev => ({ ...prev, [dateStr]: !prev[dateStr] }));
-  };
+  useEffect(() => { fetchWeekTasks(); }, [fetchWeekTasks]);
 
-  const targetPoints = 120;
+  // ── Derived data ─────────────────────────────────────
+
+  const barData = weekDates.map((date, i) => ({
+    date,
+    label:    DAY_LABELS[i],
+    pts:      dailyScores[date] ?? 0,
+    isToday:  date === today,
+    isFuture: date > today,
+  }));
+
+  const maxPts = Math.max(...barData.map(d => d.pts), 1);
+
+  const completedTasks   = weekTasks.filter(t => t.completed || t.completedMin);
+  const totalWeekPts     = weekDates.reduce((s, d) => s + (dailyScores[d] ?? 0), 0);
+  const completionRate   = weekTasks.length > 0
+    ? Math.round((completedTasks.length / weekTasks.length) * 100)
+    : 0;
+  const bestDayEntry     = barData.reduce((b, d) => d.pts > b.pts ? d : b, barData[0]);
+  const bestDayStr       = bestDayEntry.pts > 0
+    ? new Date(bestDayEntry.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' })
+    : '—';
+
+  // Group completed tasks by date for the daily log
+  const completedByDate: Record<string, any[]> = {};
+  for (const t of completedTasks) {
+    (completedByDate[t.date] ??= []).push(t);
+  }
+  const activeDays = weekDates
+    .filter(d => (completedByDate[d]?.length ?? 0) > 0)
+    .sort((a, b) => b.localeCompare(a));
+
+  // ── Render ────────────────────────────────────────────
 
   return (
-    <div className="app-container bg-secondary/30 text-foreground h-[100dvh] w-full overflow-hidden flex flex-col" onClick={() => setActiveTooltip(null)}>
+    <div className="app-container bg-background text-foreground h-[100dvh] w-full overflow-hidden flex flex-col">
 
-      <div className="sticky top-0 z-30 bg-background/90 backdrop-blur-md pt-6 pb-4 px-4 border-b border-border shadow-sm flex flex-col gap-4">
-        <h1 className="text-[24px] font-[700] tracking-[-0.4px]">Analytics</h1>
-
-        <div className="flex p-1 bg-secondary rounded-[8px]">
-          {(['This Week', 'Last Week', 'This Month'] as TimeRange[]).map(r => (
-            <button
-              key={r}
-              onClick={() => setTimeRange(r)}
-              className={`flex-1 py-1.5 rounded-[6px] text-[13px] font-[600] transition-colors ${timeRange === r ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}
-            >
-              {r}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="scroll-area flex-1 overflow-y-auto overflow-x-hidden pt-6 pb-32">
-
-        <div className="px-4 mb-8 relative">
-          <div className="flex justify-between items-center bg-card border border-border shadow-sm rounded-[16px] p-5">
-            {chartData.map((d: any, i: number) => {
-              const radius = 15;
-              const strokeWidth = 3;
-              const circumference = 2 * Math.PI * radius;
-              const percent = Math.min(100, Math.max(0, (d.points / targetPoints) * 100));
-              const offset = circumference - (percent / 100) * circumference;
-
-              return (
-                <div key={i} className="flex flex-col items-center gap-2 relative">
-                  <div
-                    className="relative flex items-center justify-center cursor-pointer transition-transform active:scale-95"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      setActiveTooltip({ x: rect.left + rect.width / 2, y: rect.top - 8, points: d.points, tasks: d.tasks });
-                    }}
-                  >
-                    <svg width={(radius + strokeWidth) * 2} height={(radius + strokeWidth) * 2} className="transform -rotate-90">
-                      <circle cx={radius + strokeWidth} cy={radius + strokeWidth} r={radius} fill="transparent" stroke="var(--secondary)" strokeWidth={strokeWidth} />
-                      <circle cx={radius + strokeWidth} cy={radius + strokeWidth} r={radius} fill="transparent" stroke="var(--primary)" strokeWidth={strokeWidth} strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" className="transition-all duration-1000 ease-out" />
-                    </svg>
-                  </div>
-                  <span className="text-[12px] font-[600] text-muted-foreground">{d.day}</span>
-                </div>
-              );
-            })}
-          </div>
-
-          {activeTooltip && (
-            <div
-              className="fixed z-50 bg-foreground text-background px-3 py-2 rounded-[8px] text-[12px] font-[500] whitespace-nowrap shadow-lg pointer-events-none transform -translate-x-1/2 -translate-y-full"
-              style={{ left: activeTooltip.x, top: activeTooltip.y }}
-            >
-              <div className="font-[700] mb-0.5">{activeTooltip.points} pts</div>
-              <div className="opacity-80">{activeTooltip.tasks} tasks completed</div>
-              <div className="absolute w-2 h-2 bg-foreground transform rotate-45 left-1/2 -ml-1 -bottom-1" />
+      {/* ── Header ── */}
+      <div className="sticky top-0 z-30 bg-background/90 backdrop-blur-md pt-6 pb-3 px-4 border-b border-border">
+        <div className="flex items-center justify-between mb-3">
+          <h1 className="text-[24px] font-[700] tracking-[-0.4px]">Analytics</h1>
+          {streak > 0 && (
+            <div className="flex items-center gap-1 text-orange-500 text-[13px] font-[600] bg-orange-500/10 px-2.5 py-1 rounded-full">
+              <Flame size={13} /> {streak}d streak
             </div>
           )}
         </div>
 
-        <div className="px-4 mb-8">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-card border border-border rounded-[12px] p-4 flex flex-col justify-between shadow-sm">
-              <div className="text-muted-foreground text-[13px] font-[500] mb-2 flex items-center gap-1.5">
-                <Trophy size={14} /> Active Streaks
-              </div>
-              <div className="text-[28px] font-[600] text-foreground tracking-[-0.5px]">{SUMMARY_STATS.activeStreaks}</div>
-              <div className="flex items-center gap-1.5 text-orange-500 text-[13px] font-[600] mt-1 bg-orange-500/10 px-2 py-0.5 rounded-full w-fit">
-                <Flame size={12} /> +2 this week
-              </div>
-            </div>
-            <div className="bg-card border border-border rounded-[12px] p-4 flex flex-col justify-between shadow-sm">
-              <div className="text-muted-foreground text-[13px] font-[500] mb-2 flex items-center gap-1.5">
-                <Clock size={14} /> Tasks Done
-              </div>
-              <div className="text-[28px] font-[600] text-foreground tracking-[-0.5px]">{SUMMARY_STATS.totalLogged}</div>
-            </div>
-          </div>
+        {/* Week navigator */}
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => { setWeekOffset(o => o - 1); setActiveBar(null); }}
+            className="w-8 h-8 flex items-center justify-center rounded-full active:bg-secondary transition-colors"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <span className="text-[14px] font-[600]">
+            {isThisWeek ? 'This Week' : formatWeekLabel(weekDates)}
+          </span>
+          <button
+            onClick={() => { setWeekOffset(o => Math.min(o + 1, 0)); setActiveBar(null); }}
+            disabled={isThisWeek}
+            className="w-8 h-8 flex items-center justify-center rounded-full active:bg-secondary transition-colors disabled:opacity-30"
+          >
+            <ChevronRight size={18} />
+          </button>
         </div>
+      </div>
 
-        <div className="px-4 mb-10">
-          <div className="flex justify-between items-end mb-4">
-            <h2 className="text-[18px] font-[700] tracking-[-0.4px]">Category Time</h2>
-            {filteredCategory && (
-              <button
-                onClick={() => setFilteredCategory(null)}
-                className="text-[12px] font-[600] text-primary bg-primary/10 px-2 py-0.5 rounded-full"
-              >
-                Clear filter
-              </button>
-            )}
-          </div>
+      {/* ── Scrollable body ── */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden pb-28 pt-5">
 
-          <div className="bg-card border border-border rounded-[16px] p-5 shadow-sm">
-            <div className="w-full h-3 rounded-full overflow-hidden flex mb-6 bg-secondary">
-              {CATEGORY_BREAKDOWN.map((c) => {
-                const totalMins = CATEGORY_BREAKDOWN.reduce((sum, item) => sum + item.mins, 0);
-                const pct = (c.mins / totalMins) * 100;
-                return (
-                  <div
-                    key={c.name}
-                    className={`h-full ${CATEGORY_COLORS[c.name]} transition-all duration-1000 ease-out`}
-                    style={{ width: animateBars ? `${pct}%` : '0%' }}
-                  />
-                );
-              })}
-            </div>
+        {/* Bar Chart */}
+        <div className="px-4 mb-5">
+          <div className="bg-card border border-border rounded-[16px] px-4 pt-4 pb-3 shadow-sm">
+            <div className="flex items-end justify-between gap-1 mb-3" style={{ height: 96 }}>
+              {barData.map((d, i) => {
+                const heightPct  = (d.pts / maxPts) * 100;
+                const hitTarget  = d.pts >= TARGET_POINTS;
+                const isSelected = activeBar === i;
 
-            <div className="space-y-4">
-              {CATEGORY_BREAKDOWN.map((c, i) => {
-                const totalMins = CATEGORY_BREAKDOWN.reduce((sum, item) => sum + item.mins, 0);
-                const pct = (c.mins / totalMins) * 100;
-                const isFiltered = filteredCategory === c.name;
-                const isNeglected = c.name === 'Finance'; // Mock logic
+                let barColor = 'bg-primary/30 dark:bg-primary/20';
+                if (d.isFuture)           barColor = 'bg-border';
+                else if (hitTarget)       barColor = 'bg-emerald-500';
+                else if (isSelected)      barColor = 'bg-primary/70';
+                else if (d.isToday && isThisWeek) barColor = 'bg-primary';
 
                 return (
                   <div
-                    key={c.name}
-                    onClick={() => setFilteredCategory(isFiltered ? null : c.name)}
-                    className={`flex items-center justify-between cursor-pointer transition-opacity ${filteredCategory && !isFiltered ? 'opacity-30' : 'opacity-100'}`}
+                    key={d.date}
+                    className="flex-1 flex flex-col items-center justify-end gap-1 cursor-pointer"
+                    onClick={() => setActiveBar(isSelected ? null : i)}
                   >
-                    <div className="flex items-center gap-2 w-[100px]">
-                      <div className={`w-2.5 h-2.5 rounded-full ${CATEGORY_COLORS[c.name]}`} />
-                      <span className="text-[14px] font-[500] text-foreground">{c.name}</span>
+                    {/* Tooltip above bar */}
+                    <div className={`text-[10px] font-[700] text-foreground transition-opacity ${isSelected && d.pts > 0 ? 'opacity-100' : 'opacity-0'}`}>
+                      {d.pts}
                     </div>
-
-                    <div className="flex-1 px-4 flex items-center gap-2">
-                      <div className="h-1.5 rounded-full bg-secondary flex-1 overflow-hidden">
-                        <div
-                          className={`h-full rounded-full ${CATEGORY_COLORS[c.name]} transition-all duration-1000 ease-out delay-${i * 100}`}
-                          style={{ width: animateBars ? `${pct}%` : '0%' }}
-                        />
-                      </div>
+                    <div className="w-full flex items-end" style={{ height: 72 }}>
+                      <div
+                        className={`w-full rounded-t-[4px] transition-all duration-500 ${barColor}`}
+                        style={{ height: d.pts > 0 ? `${Math.max(heightPct, 6)}%` : '2px' }}
+                      />
                     </div>
-
-                    <div className="w-[60px] text-right">
-                      <span className={`text-[13px] font-[600] ${isNeglected ? 'text-destructive' : 'text-foreground'}`}>{c.label}</span>
-                    </div>
+                    <span className={`text-[11px] leading-none ${
+                      d.isToday && isThisWeek
+                        ? 'font-[700] text-foreground'
+                        : 'font-[500] text-muted-foreground'
+                    }`}>
+                      {d.label}
+                    </span>
                   </div>
                 );
               })}
             </div>
+            <div className="flex items-center gap-1.5 pt-1 border-t border-border/50">
+              <div className="w-2.5 h-2.5 rounded-sm bg-emerald-500 flex-shrink-0" />
+              <span className="text-[11px] text-muted-foreground">≥ {TARGET_POINTS} pts = daily target hit</span>
+            </div>
           </div>
         </div>
 
-        <div className="px-4 mb-10">
-          <h2 className="text-[18px] font-[700] tracking-[-0.4px] mb-4">Accomplishments</h2>
-          <div className="space-y-3">
-            {ACCOMPLISHMENTS.map((day) => {
-              const isExpanded = expandedLogs[day.dateStr];
-              const visibleTasks = day.tasks.filter(t => !filteredCategory || t.goal === filteredCategory);
-
-              if (visibleTasks.length === 0) return null;
-
-              return (
-                <div key={day.dateStr} className="bg-card border border-border rounded-[12px] overflow-hidden shadow-sm">
-                  <button
-                    onClick={() => toggleLog(day.dateStr)}
-                    className="w-full flex items-center justify-between p-4 bg-secondary/30 active:bg-secondary/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-[15px] font-[600] text-foreground">{day.dateStr}</span>
-                      <span className="text-[12px] font-[600] px-2 py-0.5 rounded-full bg-primary/10 text-primary">+{day.totalPoints} pts</span>
-                    </div>
-                    {isExpanded ? <ChevronUp size={18} className="text-muted-foreground" /> : <ChevronDown size={18} className="text-muted-foreground" />}
-                  </button>
-
-                  {isExpanded && (
-                    <div className="border-t border-border">
-                      {visibleTasks.map((t, i) => (
-                        <div key={t.id} className={`p-4 flex flex-col gap-2 ${i !== 0 ? 'border-t border-border' : ''}`}>
-                          <div className="flex items-start justify-between">
-                            <span className="text-[14px] font-[500] text-foreground leading-snug">{t.name}</span>
-                            <span className="text-[12px] font-[700] text-emerald-600 dark:text-emerald-400 shrink-0 ml-4">+{t.pts}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className={`text-[10px] font-[600] px-1.5 py-0.5 rounded-[4px] ${CATEGORY_BG[t.goal as Category]} ${CATEGORY_TEXT[t.goal as Category]}`}>
-                              {t.goal}
-                            </span>
-                            <span className="text-[11px] font-[500] text-muted-foreground">{t.time}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-
-            {(!filteredCategory || filteredCategory) && ACCOMPLISHMENTS.every(d => d.tasks.filter(t => !filteredCategory || t.goal === filteredCategory).length === 0) && (
-              <div className="text-center py-10 text-muted-foreground text-[14px] font-[500]">
-                No completed tasks found for this filter.
-              </div>
-            )}
+        {/* Stats grid */}
+        <div className="px-4 mb-5">
+          <div className="grid grid-cols-2 gap-3">
+            <StatCard
+              icon={<Trophy size={13} />}
+              label="Total Points"
+              value={totalWeekPts.toString()}
+              sub="this week"
+            />
+            <StatCard
+              icon={<CheckCircle2 size={13} />}
+              label="Tasks Done"
+              value={completedTasks.length.toString()}
+              sub={`of ${weekTasks.length} total`}
+            />
+            <StatCard
+              icon={<Zap size={13} />}
+              label="Best Day"
+              value={bestDayStr}
+              sub={bestDayEntry.pts > 0 ? `${bestDayEntry.pts} pts` : 'No activity yet'}
+            />
+            <StatCard
+              icon={<TrendingUp size={13} />}
+              label="Completion"
+              value={`${completionRate}%`}
+              sub="tasks completed"
+              highlight={completionRate >= 80}
+            />
           </div>
+        </div>
+
+        {/* Daily Log */}
+        <div className="px-4 mb-4">
+          <h2 className="text-[17px] font-[700] tracking-[-0.4px] mb-3">Daily Log</h2>
+
+          {loadingTasks ? (
+            <div className="bg-card border border-border rounded-[12px] p-5 text-center">
+              <p className="text-[14px] text-muted-foreground">Loading…</p>
+            </div>
+          ) : activeDays.length === 0 ? (
+            <div className="bg-card border border-border rounded-[12px] p-5 text-center">
+              <p className="text-[14px] text-muted-foreground font-[500]">No completed tasks this week.</p>
+              <p className="text-[12px] text-muted-foreground mt-1">Complete some tasks to see them here.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {activeDays.map(date => {
+                const tasks   = completedByDate[date] ?? [];
+                const dayPts  = dailyScores[date] ?? 0;
+                const isOpen  = expandedDay === date;
+
+                return (
+                  <div key={date} className="bg-card border border-border rounded-[12px] overflow-hidden shadow-sm">
+                    <button
+                      onClick={() => setExpandedDay(isOpen ? null : date)}
+                      className="w-full flex items-center justify-between px-4 py-3 active:bg-secondary/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-[14px] font-[600] text-foreground">{formatDate(date)}</span>
+                        <span className="text-[11px] font-[600] px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                          {tasks.length} task{tasks.length !== 1 ? 's' : ''} · {dayPts} pts
+                        </span>
+                      </div>
+                      {isOpen
+                        ? <ChevronUp size={16} className="text-muted-foreground flex-shrink-0" />
+                        : <ChevronDown size={16} className="text-muted-foreground flex-shrink-0" />}
+                    </button>
+
+                    {isOpen && (
+                      <div className="border-t border-border">
+                        {tasks.map((t: any, i: number) => {
+                          const tags = normTags(t.tags);
+                          return (
+                            <div
+                              key={t.id}
+                              className={`px-4 py-3 flex items-start justify-between gap-3 ${i !== 0 ? 'border-t border-border/40' : ''}`}
+                            >
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[14px] font-[500] text-foreground leading-snug">{t.name}</p>
+                                {tags.length > 0 && (
+                                  <div className="flex flex-wrap gap-1 mt-1.5">
+                                    {tags.slice(0, 4).map(tag => {
+                                      const c = TAG_COLORS[tag.toLowerCase()] ?? { bg: 'bg-secondary', text: 'text-muted-foreground' };
+                                      return (
+                                        <span key={tag} className={`text-[10px] font-[600] px-1.5 py-0.5 rounded-[4px] ${c.bg} ${c.text}`}>
+                                          #{tag}
+                                        </span>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                              <span className="text-[12px] font-[700] text-emerald-600 dark:text-emerald-400 flex-shrink-0">
+                                +{t.points ?? 0}pts
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
       </div>
 
       <BottomNav />
+    </div>
+  );
+}
+
+// ─── StatCard ─────────────────────────────────────────────
+function StatCard({
+  icon, label, value, sub, highlight = false,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  sub: string;
+  highlight?: boolean;
+}) {
+  return (
+    <div className="bg-card border border-border rounded-[12px] p-4 shadow-sm flex flex-col gap-1">
+      <div className="flex items-center gap-1.5 text-muted-foreground text-[12px] font-[500]">
+        {icon} {label}
+      </div>
+      <div className={`text-[26px] font-[700] tracking-[-0.5px] leading-none mt-1 ${highlight ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground'}`}>
+        {value}
+      </div>
+      <div className="text-[11px] text-muted-foreground">{sub}</div>
     </div>
   );
 }

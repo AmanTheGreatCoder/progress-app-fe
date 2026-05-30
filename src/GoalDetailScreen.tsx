@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -18,10 +18,30 @@ import {
   ChevronRight,
   X,
   Search,
+  Footprints,
+  Book,
+  Briefcase,
+  Heart,
+  Globe,
+  PiggyBank,
+  Target,
 } from 'lucide-react';
 import { api } from '@/api';
 import { useAppStore } from '@/shared/store/useAppStore';
 import { BottomSheet } from '@/shared/components/ui/BottomSheet';
+import { FilterChip } from '@/shared/components/ui/FilterChip';
+
+/* ─── Goal-form constants (shared by Edit sheet) ─────────── */
+const CATEGORIES = ['Health', 'Career', 'Finance', 'Learning', 'Wellness'];
+const GOAL_ICONS: Record<string, React.ElementType> = {
+  footprints: Footprints, book: Book, briefcase: Briefcase,
+  heart: Heart, globe: Globe, 'piggy-bank': PiggyBank, target: Target,
+};
+const PRIORITY_COLORS: Record<string, string> = {
+  High: 'text-destructive bg-destructive/10',
+  Medium: 'text-amber-600 bg-amber-500/10',
+  Low: 'text-muted-foreground bg-muted',
+};
 
 /* ─── Types ─────────────────────────────────────────────── */
 
@@ -136,8 +156,13 @@ function GoalDropdownMenu({
 /* ─── RecurringSeriesRow ────────────────────────────────── */
 
 function RecurringSeriesRow({
-  series, onUnlink,
-}: { series: SeriesSummary; onUnlink: (id: string) => void }) {
+  series, onUnlink, goalStartDate, goalEndDate,
+}: {
+  series: SeriesSummary;
+  onUnlink: (id: string) => void;
+  goalStartDate: string;
+  goalEndDate: string;
+}) {
   const [expanded, setExpanded] = useState(false);
   const [instances, setInstances] = useState<TaskInstance[]>([]);
   const [loading, setLoading] = useState(false);
@@ -146,8 +171,11 @@ function RecurringSeriesRow({
     if (!expanded && instances.length === 0) {
       setLoading(true);
       try {
+        // Only fetch task instances within the goal's date range
+        const from = goalStartDate || series.firstSeen;
+        const to = goalEndDate || series.lastSeen;
         const res = await api.get(
-          `/tasks?name=${encodeURIComponent(series.name)}&from=${series.firstSeen}&to=${series.lastSeen}`
+          `/tasks?name=${encodeURIComponent(series.name)}&from=${from}&to=${to}`
         );
         setInstances(res.data ?? []);
       } catch { /* ignore */ } finally {
@@ -155,16 +183,6 @@ function RecurringSeriesRow({
       }
     }
     setExpanded(e => !e);
-  };
-
-  const handleToggle = async (task: TaskInstance) => {
-    const newVal = !task.completed;
-    setInstances(prev => prev.map(t => t.id === task.id ? { ...t, completed: newVal } : t));
-    try {
-      await api.patch(`/tasks/${task.id}`, { completed: newVal });
-    } catch {
-      setInstances(prev => prev.map(t => t.id === task.id ? { ...t, completed: task.completed } : t));
-    }
   };
 
   const doneCount = instances.filter(t => t.completed).length;
@@ -187,9 +205,10 @@ function RecurringSeriesRow({
             {series.tags.slice(0, 3).map(tag => (
               <span key={tag} className="text-[11px] text-muted-foreground">#{tag}</span>
             ))}
-            {series.firstSeen && (
+            {/* Show goal date range, not all-time history */}
+            {goalStartDate && (
               <span className="text-[11px] text-muted-foreground">
-                {formatDate(series.firstSeen)} – {formatDate(series.lastSeen)}
+                {formatDate(goalStartDate)} – {formatDate(goalEndDate)}
               </span>
             )}
           </div>
@@ -224,10 +243,9 @@ function RecurringSeriesRow({
           {instances.map((task, i) => (
             <div
               key={task.id}
-              onClick={() => handleToggle(task)}
-              className={`flex items-center gap-3 px-4 py-2.5 active:bg-secondary/60 transition-colors cursor-pointer ${i !== 0 ? 'border-t border-border/40' : ''}`}
+              className={`flex items-center gap-3 px-4 py-2.5 select-none ${i !== 0 ? 'border-t border-border/40' : ''}`}
             >
-              <div className={`flex-shrink-0 ${task.completed ? 'text-emerald-500' : 'text-muted-foreground'}`}>
+              <div className={`flex-shrink-0 pointer-events-none ${task.completed ? 'text-emerald-500' : 'text-muted-foreground/40'}`}>
                 {task.completed ? <CheckSquare size={16} /> : <Square size={16} />}
               </div>
               <span className={`flex-1 text-[13px] font-[500] text-foreground ${task.completed ? 'line-through opacity-40' : ''}`}>
@@ -340,6 +358,7 @@ export default function GoalDetailScreen() {
 
   const [isLogSheetOpen, setIsLogSheetOpen] = useState(false);
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showAllSessions, setShowAllSessions] = useState(false);
   const [tooltipData, setTooltipData] = useState<{ date: string; x: number; y: number; info: string } | null>(null);
@@ -460,6 +479,20 @@ export default function GoalDetailScreen() {
     }
   };
 
+  const handleEditSave = async (updates: {
+    title: string; category: string; priority: string;
+    startDate: string; deadline: string; iconName: string;
+  }) => {
+    try {
+      await updateGoal(goalId!, updates);
+      // Update local goal state so UI reflects immediately
+      setGoal((g: any) => ({ ...g, ...updates, start: updates.startDate, end: updates.deadline }));
+    } catch (e) {
+      console.error('Failed to update goal', e);
+    }
+    setIsEditOpen(false);
+  };
+
   /* ── Render ── */
 
   return (
@@ -486,7 +519,7 @@ export default function GoalDetailScreen() {
           </button>
           {isMenuOpen && (
             <GoalDropdownMenu
-              onEdit={() => {}}
+              onEdit={() => setIsEditOpen(true)}
               onArchive={handleArchive}
               onClose={() => setIsMenuOpen(false)}
             />
@@ -529,24 +562,54 @@ export default function GoalDetailScreen() {
           </div>
         </div>
 
-        {/* Timeframe */}
+        {/* Progress */}
         <div className="mb-10">
-          <div className="flex justify-between items-end mb-2">
-            <span className="text-[14px] font-[600]">Timeframe Progress</span>
-            <span className="text-[12px] font-[600] text-muted-foreground">{timeframePct}% complete</span>
-          </div>
-          <div className="w-full h-2.5 bg-secondary rounded-full overflow-hidden mb-2">
-            <div className="h-full bg-emerald-500 rounded-full transition-all duration-700" style={{ width: `${timeframePct}%` }} />
-          </div>
-          <div className="flex justify-between text-[11px] font-[500] text-muted-foreground">
-            <span>
-              {new Date(goal.startDate ?? goal.start ?? today).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-            </span>
-            <span>
-              {daysLeft > 0 ? `${daysLeft} days left` : 'Ended'} ·{' '}
-              {new Date(goal.deadline ?? goal.end ?? today).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-            </span>
-          </div>
+          {linkedSeries.length > 0 ? (
+            /* Task-completion progress when linked series are set */
+            <>
+              <div className="flex justify-between items-end mb-2">
+                <span className="text-[14px] font-[600]">Task Progress</span>
+                <span className="text-[12px] font-[600] text-muted-foreground">
+                  {goal.done ?? 0} / {goal.total ?? 0} days
+                </span>
+              </div>
+              <div className="w-full h-2.5 bg-secondary rounded-full overflow-hidden mb-2">
+                <div
+                  className="h-full bg-emerald-500 rounded-full transition-all duration-700"
+                  style={{ width: `${goal.pct ?? 0}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-[11px] font-[500] text-muted-foreground">
+                <span>
+                  {new Date(goal.startDate ?? goal.start ?? today).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                </span>
+                <span>
+                  {daysLeft > 0 ? `${daysLeft} days left` : 'Ended'} ·{' '}
+                  {new Date(goal.deadline ?? goal.end ?? today).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                </span>
+              </div>
+            </>
+          ) : (
+            /* Timeframe-based progress when no linked tasks */
+            <>
+              <div className="flex justify-between items-end mb-2">
+                <span className="text-[14px] font-[600]">Timeframe Progress</span>
+                <span className="text-[12px] font-[600] text-muted-foreground">{timeframePct}% complete</span>
+              </div>
+              <div className="w-full h-2.5 bg-secondary rounded-full overflow-hidden mb-2">
+                <div className="h-full bg-emerald-500 rounded-full transition-all duration-700" style={{ width: `${timeframePct}%` }} />
+              </div>
+              <div className="flex justify-between text-[11px] font-[500] text-muted-foreground">
+                <span>
+                  {new Date(goal.startDate ?? goal.start ?? today).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                </span>
+                <span>
+                  {daysLeft > 0 ? `${daysLeft} days left` : 'Ended'} ·{' '}
+                  {new Date(goal.deadline ?? goal.end ?? today).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                </span>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Heatmap */}
@@ -705,6 +768,8 @@ export default function GoalDetailScreen() {
                   key={series.id}
                   series={series}
                   onUnlink={handleUnlinkSeries}
+                  goalStartDate={goal.startDate ?? goal.start ?? today}
+                  goalEndDate={goal.deadline ?? goal.end ?? today}
                 />
               ))}
             </div>
@@ -728,6 +793,16 @@ export default function GoalDetailScreen() {
         linkedSeriesIds={linkedSeries.map(s => s.id)}
         onLink={handleLinkSeries}
       />
+
+      {/* Edit Goal Sheet */}
+      {goal && (
+        <EditGoalSheet
+          isOpen={isEditOpen}
+          goal={goal}
+          onClose={() => setIsEditOpen(false)}
+          onSave={handleEditSave}
+        />
+      )}
     </div>
   );
 }
@@ -789,6 +864,168 @@ function LogSessionSheet({ isOpen, goalName, onClose, onSubmit }: any) {
             placeholder="How did it go?"
             className="w-full h-[80px] p-3 border border-input rounded-[12px] bg-background text-[15px] outline-none focus:border-primary transition-colors resize-none placeholder:text-muted-foreground"
           />
+        </div>
+      </div>
+    </BottomSheet>
+  );
+}
+
+/* ─── EditGoalSheet ─────────────────────────────────────── */
+
+function EditGoalSheet({
+  isOpen, goal, onClose, onSave,
+}: {
+  isOpen: boolean;
+  goal: any;
+  onClose: () => void;
+  onSave: (updates: {
+    title: string; category: string; priority: string;
+    startDate: string; deadline: string; iconName: string;
+  }) => void;
+}) {
+  const [title, setTitle] = useState('');
+  const [category, setCategory] = useState('');
+  const [priority, setPriority] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [deadline, setDeadline] = useState('');
+  const [iconName, setIconName] = useState('target');
+
+  // Seed form from goal whenever the sheet opens
+  useEffect(() => {
+    if (isOpen && goal) {
+      setTitle(goal.title ?? '');
+      setCategory(goal.category ?? 'Health');
+      setPriority(goal.priority ?? 'Medium');
+      setStartDate(goal.startDate ?? goal.start ?? '');
+      setDeadline(goal.deadline ?? goal.end ?? '');
+      setIconName(goal.iconName ?? goal.icon ?? 'target');
+    }
+  }, [isOpen, goal]);
+
+  const durationDays = startDate && deadline
+    ? Math.max(0, Math.ceil(
+        (new Date(deadline).getTime() - new Date(startDate).getTime()) / 86400000
+      ))
+    : 0;
+
+  const handleSave = () => {
+    if (!title.trim()) return;
+    onSave({ title: title.trim(), category, priority, startDate, deadline, iconName });
+  };
+
+  return (
+    <BottomSheet
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Edit Goal"
+      footer={
+        <button
+          onClick={handleSave}
+          disabled={!title.trim()}
+          className="w-full h-[48px] rounded-[12px] bg-primary text-primary-foreground text-[16px] font-[600] active:scale-[0.98] transition-all disabled:opacity-40"
+        >
+          Save Changes
+        </button>
+      }
+    >
+      <div className="space-y-6">
+        {/* Title */}
+        <div>
+          <label className="block text-[14px] font-[600] mb-2 text-foreground">Goal Name</label>
+          <input
+            type="text"
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            placeholder="e.g. Run 5k"
+            className="w-full h-[48px] border border-input rounded-[12px] px-4 bg-background text-[16px] text-foreground outline-none focus:border-primary transition-all"
+          />
+        </div>
+
+        {/* Category */}
+        <div>
+          <label className="block text-[14px] font-[600] mb-2 text-foreground">Category</label>
+          <div className="flex flex-wrap gap-2">
+            {CATEGORIES.map(cat => (
+              <FilterChip
+                key={cat}
+                label={cat}
+                active={category === cat}
+                onClick={() => setCategory(cat)}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Priority */}
+        <div>
+          <label className="block text-[14px] font-[600] mb-2 text-foreground">Priority</label>
+          <div className="flex p-1 bg-secondary rounded-[12px]">
+            {['High', 'Medium', 'Low'].map(p => (
+              <button
+                key={p}
+                onClick={() => setPriority(p)}
+                className={`flex-1 py-2 rounded-[10px] text-[14px] font-[600] transition-all ${
+                  priority === p ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Date range */}
+        <div>
+          <label className="block text-[14px] font-[600] mb-2 text-foreground">Timeframe</label>
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <p className="text-[12px] font-[500] text-muted-foreground mb-1.5">Start date</p>
+              <input
+                type="date"
+                value={startDate}
+                onChange={e => {
+                  setStartDate(e.target.value);
+                  if (deadline && e.target.value > deadline) setDeadline(e.target.value);
+                }}
+                className="w-full h-[44px] border border-input rounded-[12px] px-3 bg-background text-[14px] font-[500] text-foreground outline-none focus:border-primary transition-all appearance-none"
+              />
+            </div>
+            <div className="flex-1">
+              <p className="text-[12px] font-[500] text-muted-foreground mb-1.5">End date</p>
+              <input
+                type="date"
+                value={deadline}
+                min={startDate}
+                onChange={e => setDeadline(e.target.value)}
+                className="w-full h-[44px] border border-input rounded-[12px] px-3 bg-background text-[14px] font-[500] text-foreground outline-none focus:border-primary transition-all appearance-none"
+              />
+            </div>
+          </div>
+          {durationDays > 0 && (
+            <p className="text-[12px] text-muted-foreground mt-2 text-center">
+              {durationDays} day{durationDays !== 1 ? 's' : ''} total
+            </p>
+          )}
+        </div>
+
+        {/* Icon */}
+        <div>
+          <label className="block text-[14px] font-[600] mb-2 text-foreground">Icon</label>
+          <div className="grid grid-cols-7 gap-2">
+            {Object.entries(GOAL_ICONS).map(([key, Icon]) => (
+              <button
+                key={key}
+                onClick={() => setIconName(key)}
+                className={`aspect-square rounded-[12px] flex items-center justify-center border transition-all ${
+                  iconName === key
+                    ? 'bg-primary text-primary-foreground border-primary scale-110 shadow-sm'
+                    : 'bg-card text-muted-foreground border-border active:bg-secondary'
+                }`}
+              >
+                <Icon size={18} />
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </BottomSheet>

@@ -39,8 +39,7 @@ export default function TodayScreen() {
 
   return (
     <div className="app-container text-foreground h-[100dvh] w-full overflow-hidden flex flex-col relative bg-background">
-      <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 pt-8 pb-24 space-y-10">
-
+      <div className="flex flex-col gap-4 overflow-y-auto overflow-x-hidden px-4 pt-8">
         <header className="mb-2">
           <h1 className="text-[30px] font-[600] tracking-[-0.4px] leading-tight text-foreground">{greeting},</h1>
           <p className="text-muted-foreground text-[16px] font-[400] mt-1">{dateStr}, {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</p>
@@ -73,7 +72,7 @@ export default function TodayScreen() {
         </section>
 
         <section>
-          <h2 className="text-[20px] font-[700] mb-4 tracking-[-0.4px] text-foreground">Active Streaks</h2>
+          <h2 className="text-[20px] font-[700] tracking-[-0.4px] mb-2 text-foreground">Active Streaks</h2>
           <div className="flex overflow-x-auto hide-scrollbar gap-4 pb-2 -mx-4 px-4">
             {goals.map(goal => {
               const Icon = goal.category === 'Health' ? Play : goal.category === 'Learning' ? Calendar : Target;
@@ -100,7 +99,7 @@ export default function TodayScreen() {
         </section>
 
         <section>
-          <h2 className="text-[20px] font-[700] mb-4 tracking-[-0.4px] text-foreground">Today's Tasks</h2>
+          <h2 className="text-[20px] font-[700] tracking-[-0.4px] mb-2 text-foreground">Today's Tasks</h2>
 
           {incompleteTasks.length === 0 && completedTasks.length > 0 && (
             <div className="py-8 flex flex-col items-center justify-center text-center bg-card border border-border rounded-[16px] shadow-sm p-6 mb-6">
@@ -134,24 +133,25 @@ export default function TodayScreen() {
               </div>
             </div>
           )}
-        </section>
 
-        <section className="bg-card border border-border rounded-[16px] p-6 shadow-sm mb-8">
-          <h3 className="text-[16px] font-[700] mb-4 text-foreground tracking-[-0.4px]">Daily Summary</h3>
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <div className="text-[24px] font-[700] mb-1 text-foreground tracking-[-0.4px]">{completedTasks.length}/{tasks.length}</div>
-              <div className="text-muted-foreground text-[14px] font-[500]">Tasks</div>
+
+          <section className="bg-card border border-border rounded-[16px] p-4 shadow-sm mb-8">
+            <h3 className="text-[16px] font-[700] mb-4 text-foreground tracking-[-0.4px]">Daily Summary</h3>
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div>
+                <div className="text-[24px] font-[700] mb-1 text-foreground tracking-[-0.4px]">{completedTasks.length}/{tasks.length}</div>
+                <div className="text-muted-foreground text-[14px] font-[500]">Tasks</div>
+              </div>
+              <div>
+                <div className="text-[24px] font-[700] mb-1 text-foreground tracking-[-0.4px]">{goals.length}</div>
+                <div className="text-muted-foreground text-[14px] font-[500]">Goals</div>
+              </div>
+              <div>
+                <div className="text-[24px] font-[700] mb-1 text-foreground tracking-[-0.4px]">1h 15m</div>
+                <div className="text-muted-foreground text-[14px] font-[500]">Logged</div>
+              </div>
             </div>
-            <div>
-              <div className="text-[24px] font-[700] mb-1 text-foreground tracking-[-0.4px]">{goals.length}</div>
-              <div className="text-muted-foreground text-[14px] font-[500]">Goals</div>
-            </div>
-            <div>
-              <div className="text-[24px] font-[700] mb-1 text-foreground tracking-[-0.4px]">1h 15m</div>
-              <div className="text-muted-foreground text-[14px] font-[500]">Logged</div>
-            </div>
-          </div>
+          </section>
         </section>
 
       </div>

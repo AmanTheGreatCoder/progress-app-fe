@@ -72,11 +72,10 @@ function SettingsRow({
       className="w-full flex items-center gap-3 px-4 py-3.5 bg-card active:bg-muted transition-colors text-left"
     >
       <div
-        className={`w-8 h-8 rounded-[8px] flex items-center justify-center flex-shrink-0 ${
-          danger
+        className={`w-8 h-8 rounded-[8px] flex items-center justify-center flex-shrink-0 ${danger
             ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
             : 'bg-secondary text-foreground'
-        }`}
+          }`}
       >
         <Icon size={16} />
       </div>
@@ -99,16 +98,14 @@ function ToggleSwitch({ value, onChange }: { value: boolean; onChange: (v: boole
   return (
     <button
       onClick={() => onChange(!value)}
-      className={`relative w-11 h-6 rounded-full transition-colors duration-200 flex-shrink-0 ${
-        value ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-slate-600'
-      }`}
+      className={`relative w-11 h-6 rounded-full transition-colors duration-200 flex-shrink-0 ${value ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-slate-600'
+        }`}
       role="switch"
       aria-checked={value}
     >
       <span
-        className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
-          value ? 'translate-x-5' : 'translate-x-0'
-        }`}
+        className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${value ? 'translate-x-5' : 'translate-x-0'
+          }`}
       />
     </button>
   );
@@ -218,9 +215,8 @@ export default function SettingsScreen() {
                 <button
                   key={color}
                   title={label}
-                  className={`w-7 h-7 rounded-full border-2 transition-transform active:scale-90 ${
-                    color === '#0f172a' ? 'border-foreground scale-110' : 'border-transparent'
-                  }`}
+                  className={`w-7 h-7 rounded-full border-2 transition-transform active:scale-90 ${color === '#0f172a' ? 'border-foreground scale-110' : 'border-transparent'
+                    }`}
                   style={{ backgroundColor: color }}
                 />
               ))}
@@ -243,7 +239,7 @@ export default function SettingsScreen() {
                 </p>
               </div>
             </div>
-            
+
             {!tickTickStatus?.connected ? (
               <button
                 onClick={handleConnectTickTick}
@@ -319,7 +315,7 @@ export default function SettingsScreen() {
             icon={Shield}
             label="Data & Privacy"
             sublabel="Manage your data"
-            onClick={() => {}}
+            onClick={() => { }}
           />
         </SettingsCard>
 
@@ -337,12 +333,12 @@ export default function SettingsScreen() {
           <SettingsRow
             icon={Star}
             label="Rate on App Store"
-            onClick={() => {}}
+            onClick={() => { }}
           />
           <SettingsRow
             icon={Settings}
             label="Send Feedback"
-            onClick={() => {}}
+            onClick={() => { }}
           />
         </SettingsCard>
 
@@ -354,7 +350,7 @@ export default function SettingsScreen() {
             label="Reset All Data"
             sublabel="Permanently delete everything"
             danger
-            onClick={() => {}}
+            onClick={() => { }}
           />
         </SettingsCard>
 

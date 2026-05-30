@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import TodayScreen from '@/TodayScreen';
 import GoalsScreen from '@/GoalsScreen';
 import GoalDetailScreen from '@/GoalDetailScreen';
@@ -12,12 +12,20 @@ import { useAppStore } from '@/shared/store/useAppStore';
 
 function App() {
   const { user, userLoading, fetchUser } = useAppStore();
+  const navigate = useNavigate();
 
   useEffect(() => {
+    // After Google OAuth redirect, the token arrives as ?token=...
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    if (token) {
+      localStorage.setItem('auth_token', token);
+      // Clean the token out of the URL without pushing a history entry
+      window.history.replaceState({}, '', window.location.pathname);
+    }
     fetchUser();
   }, [fetchUser]);
 
-  // Spinner while we check the session
   if (userLoading) {
     return (
       <div className="h-[100dvh] w-full flex items-center justify-center bg-background">
@@ -26,7 +34,6 @@ function App() {
     );
   }
 
-  // Not signed in — only show login
   if (!user) {
     return (
       <>
@@ -36,7 +43,6 @@ function App() {
     );
   }
 
-  // Signed in — full app
   return (
     <>
       <Toaster position="top-center" richColors />

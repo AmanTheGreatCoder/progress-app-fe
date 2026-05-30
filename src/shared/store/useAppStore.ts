@@ -7,7 +7,7 @@ export interface AppState {
   user: User | null;
   userLoading: boolean;
   fetchUser: () => Promise<void>;
-  logout: () => Promise<void>;
+  logout: () => void;
 
   // Data
   tasks: Task[];
@@ -43,8 +43,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
-  logout: async () => {
-    await api.get('/auth/logout');
+  logout: () => {
+    localStorage.removeItem('auth_token');
     set({ user: null });
   },
 

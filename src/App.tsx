@@ -1,19 +1,18 @@
-import { useEffect } from 'react';
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import TodayScreen from '@/TodayScreen';
-import GoalsScreen from '@/GoalsScreen';
-import GoalDetailScreen from '@/GoalDetailScreen';
-import TasksScreen from '@/TasksScreen';
 import AnalyticsScreen from '@/AnalyticsScreen';
-import SettingsScreen from '@/SettingsScreen';
-import LoginScreen from '@/LoginScreen';
-import { Toaster } from 'sonner';
-import { useAppStore } from '@/shared/store/useAppStore';
 import { setAuthToken } from '@/api';
+import GoalDetailScreen from '@/GoalDetailScreen';
+import GoalsScreen from '@/GoalsScreen';
+import LoginScreen from '@/LoginScreen';
+import SettingsScreen from '@/SettingsScreen';
+import { useAppStore } from '@/shared/store/useAppStore';
+import TasksScreen from '@/TasksScreen';
+import TodayScreen from '@/TodayScreen';
+import { useEffect } from 'react';
+import { Navigate, Route, Routes } from 'react-router-dom';
+import { Toaster } from 'sonner';
 
 function App() {
   const { user, userLoading, fetchUser } = useAppStore();
-  const navigate = useNavigate();
 
   useEffect(() => {
     // After Google OAuth redirect, the token arrives as ?token=...

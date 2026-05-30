@@ -39,7 +39,7 @@ export default function TodayScreen() {
 
   return (
     <div className="app-container text-foreground h-[100dvh] w-full overflow-hidden flex flex-col relative bg-background">
-      <div className="flex flex-col gap-4 overflow-y-auto overflow-x-hidden px-4 pt-8">
+      <div className="flex-1 min-h-0 flex flex-col gap-4 overflow-y-auto overflow-x-hidden px-4 pt-8">
         <header className="mb-2">
           <h1 className="text-[30px] font-[600] tracking-[-0.4px] leading-tight text-foreground">{greeting},</h1>
           <p className="text-muted-foreground text-[16px] font-[400] mt-1">{dateStr}, {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</p>

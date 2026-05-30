@@ -1,15 +1,22 @@
 import { create } from 'zustand';
 import { api } from '@/api';
-import type { Task, Goal } from '@/shared/types';
+import type { Task, Goal, User } from '@/shared/types';
 
 export interface AppState {
+  // Auth
+  user: User | null;
+  userLoading: boolean;
+  fetchUser: () => Promise<void>;
+  logout: () => Promise<void>;
+
+  // Data
   tasks: Task[];
   goals: Goal[];
   points: number;
   targetPoints: number;
   selectedDate: string;
   activeFilter: string;
-  
+
   // Actions
   fetchTasks: (date: string) => Promise<void>;
   fetchGoals: () => Promise<void>;
@@ -23,11 +30,30 @@ export interface AppState {
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
+  // Auth
+  user: null,
+  userLoading: true,
+
+  fetchUser: async () => {
+    try {
+      const res = await api.get('/auth/me');
+      set({ user: res.data, userLoading: false });
+    } catch {
+      set({ user: null, userLoading: false });
+    }
+  },
+
+  logout: async () => {
+    await api.get('/auth/logout');
+    set({ user: null });
+  },
+
+  // Data
   tasks: [],
   goals: [],
   points: 0,
   targetPoints: 120,
-  selectedDate: new Date().toISOString().split('T')[0], // YYYY-MM-DD local logic should be applied but this is a placeholder
+  selectedDate: new Date().toISOString().split('T')[0],
   activeFilter: 'All',
 
   fetchTasks: async (date: string) => {
@@ -78,9 +104,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   fetchDashboard: async () => {
     try {
       const res = await api.get('/dashboard');
-      set({ 
+      set({
         points: res.data.currentScore || 0,
-        targetPoints: res.data.targetPoints || 120 
+        targetPoints: res.data.targetPoints || 120,
       });
     } catch (err) {
       console.error('Failed to fetch dashboard', err);
@@ -94,21 +120,14 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     const isCompleting = !tasks[taskIdx].completed;
 
-    // Optimistic update
-    set({
-      tasks: tasks.map(t => (t.id === id ? { ...t, completed: isCompleting } : t))
-    });
+    set({ tasks: tasks.map(t => (t.id === id ? { ...t, completed: isCompleting } : t)) });
 
     try {
       await api.patch(`/tasks/${id}`, { completed: isCompleting });
-      // Refetch dashboard score after completion
       get().fetchDashboard();
     } catch (err) {
       console.error('Failed to toggle task', err);
-      // Revert on failure
-      set({
-        tasks: tasks.map(t => (t.id === id ? { ...t, completed: !isCompleting } : t))
-      });
+      set({ tasks: tasks.map(t => (t.id === id ? { ...t, completed: !isCompleting } : t)) });
     }
   },
 

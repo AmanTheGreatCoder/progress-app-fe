@@ -54,11 +54,20 @@
     border-color: var(--border);
   }
 
+  html {
+    height: 100%;
+    overflow: hidden;
+  }
+
   body {
     font-family: 'Outfit', ui-sans-serif, system-ui, sans-serif;
     background-color: var(--background);
     color: var(--foreground);
     margin: 0;
+    height: 100%;
+    overflow: hidden;
+    /* Prevent pull-to-refresh from scrolling the document */
+    overscroll-behavior: none;
     -webkit-tap-highlight-color: transparent;
   }
 }

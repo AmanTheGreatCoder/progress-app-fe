@@ -37,11 +37,6 @@ const GOAL_ICONS: Record<string, React.ElementType> = {
   footprints: Footprints, book: Book, briefcase: Briefcase,
   heart: Heart, globe: Globe, 'piggy-bank': PiggyBank, target: Target,
 };
-const PRIORITY_COLORS: Record<string, string> = {
-  High: 'text-destructive bg-destructive/10',
-  Medium: 'text-amber-600 bg-amber-500/10',
-  Low: 'text-muted-foreground bg-muted',
-};
 
 /* ─── Types ─────────────────────────────────────────────── */
 
@@ -279,7 +274,7 @@ function AddTaskSheet({
     setLoading(true);
     api.get('/tasks/series')
       .then(res => setAllSeries(res.data ?? []))
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
   }, [isOpen]);
 
@@ -668,11 +663,10 @@ export default function GoalDetailScreen() {
         {/* Log button */}
         <button
           onClick={() => setIsLogSheetOpen(true)}
-          className={`w-full py-4 rounded-[12px] flex items-center justify-center gap-2 text-[16px] font-[600] shadow-sm transition-all active:scale-[0.98] mb-10 ${
-            hasLoggedToday
+          className={`w-full py-4 rounded-[12px] flex items-center justify-center gap-2 text-[16px] font-[600] shadow-sm transition-all active:scale-[0.98] mb-10 ${hasLoggedToday
               ? 'bg-secondary text-foreground border border-border'
               : 'bg-primary text-primary-foreground'
-          }`}
+            }`}
         >
           {hasLoggedToday
             ? <><Check size={20} /> Add Another Session</>
@@ -697,9 +691,8 @@ export default function GoalDetailScreen() {
                 <div key={dateStr} className="flex flex-col items-center flex-1 gap-2">
                   <div className="w-full bg-secondary rounded-t-[4px] flex items-end" style={{ height: 80 }}>
                     <div
-                      className={`w-full rounded-t-[4px] transition-all duration-700 ${
-                        isToday ? 'bg-emerald-500' : 'bg-emerald-400/60 dark:bg-emerald-500/40'
-                      }`}
+                      className={`w-full rounded-t-[4px] transition-all duration-700 ${isToday ? 'bg-emerald-500' : 'bg-emerald-400/60 dark:bg-emerald-500/40'
+                        }`}
                       style={{ height: mins > 0 ? `${Math.max(heightPct, 6)}%` : '0%' }}
                     />
                   </div>
@@ -844,11 +837,10 @@ function LogSessionSheet({ isOpen, goalName, onClose, onSubmit }: any) {
               <button
                 key={m}
                 onClick={() => setDuration(m)}
-                className={`flex-shrink-0 px-4 py-1.5 rounded-full text-[14px] font-[600] border transition-colors ${
-                  duration === m
+                className={`flex-shrink-0 px-4 py-1.5 rounded-full text-[14px] font-[600] border transition-colors ${duration === m
                     ? 'bg-primary text-primary-foreground border-primary'
                     : 'bg-card text-muted-foreground border-border'
-                }`}
+                  }`}
               >
                 {m}m
               </button>
@@ -904,8 +896,8 @@ function EditGoalSheet({
 
   const durationDays = startDate && deadline
     ? Math.max(0, Math.ceil(
-        (new Date(deadline).getTime() - new Date(startDate).getTime()) / 86400000
-      ))
+      (new Date(deadline).getTime() - new Date(startDate).getTime()) / 86400000
+    ))
     : 0;
 
   const handleSave = () => {
@@ -964,9 +956,8 @@ function EditGoalSheet({
               <button
                 key={p}
                 onClick={() => setPriority(p)}
-                className={`flex-1 py-2 rounded-[10px] text-[14px] font-[600] transition-all ${
-                  priority === p ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'
-                }`}
+                className={`flex-1 py-2 rounded-[10px] text-[14px] font-[600] transition-all ${priority === p ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'
+                  }`}
               >
                 {p}
               </button>
@@ -1016,11 +1007,10 @@ function EditGoalSheet({
               <button
                 key={key}
                 onClick={() => setIconName(key)}
-                className={`aspect-square rounded-[12px] flex items-center justify-center border transition-all ${
-                  iconName === key
+                className={`aspect-square rounded-[12px] flex items-center justify-center border transition-all ${iconName === key
                     ? 'bg-primary text-primary-foreground border-primary scale-110 shadow-sm'
                     : 'bg-card text-muted-foreground border-border active:bg-secondary'
-                }`}
+                  }`}
               >
                 <Icon size={18} />
               </button>

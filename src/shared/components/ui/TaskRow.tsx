@@ -12,7 +12,7 @@ interface TaskRowProps {
 const normTags = (raw: unknown): string[] =>
   Array.isArray(raw) ? raw : (raw ? String(raw).split(',').filter(Boolean) : []);
 
-export const TaskRow: React.FC<TaskRowProps> = ({ task, goals, isLast = false, onToggle }) => {
+export const TaskRow: React.FC<TaskRowProps> = ({ task, goals, isLast = false }) => {
   const goal = goals?.find(g => g.id === task.goalId) || (task.goalId ? { title: 'Goal', category: 'General' } : null);
 
   return (
@@ -35,11 +35,11 @@ export const TaskRow: React.FC<TaskRowProps> = ({ task, goals, isLast = false, o
 
         <div className={`flex-1 min-w-0 ${task.completed ? 'opacity-50 line-through' : ''}`}>
           {goal && (
-             <div className="flex items-center gap-2 mb-1.5">
-               <span className="text-[11px] font-[600] px-2 py-0.5 rounded-[4px] bg-primary/10 text-primary whitespace-nowrap leading-none">
-                 {goal.title || 'Goal'}
-               </span>
-             </div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="text-[11px] font-[600] px-2 py-0.5 rounded-[4px] bg-primary/10 text-primary whitespace-nowrap leading-none">
+                {goal.title || 'Goal'}
+              </span>
+            </div>
           )}
           <div className="text-[15px] font-[500] text-foreground leading-snug mb-1">{task.name}</div>
           {task.minVersion && (

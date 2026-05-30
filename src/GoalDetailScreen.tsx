@@ -30,6 +30,8 @@ import { api } from '@/api';
 import { useAppStore } from '@/shared/store/useAppStore';
 import { BottomSheet } from '@/shared/components/ui/BottomSheet';
 import { FilterChip } from '@/shared/components/ui/FilterChip';
+import { toLocalDateString } from '@/shared/dateUtils';
+import { Skeleton } from '@/shared/components/ui/Skeleton';
 
 /* ─── Goal-form constants (shared by Edit sheet) ─────────── */
 const CATEGORIES = ['Health', 'Career', 'Finance', 'Learning', 'Wellness'];
@@ -69,7 +71,7 @@ type TaskInstance = {
 /* ─── Helpers ───────────────────────────────────────────── */
 
 function todayStr() {
-  return new Date().toISOString().split('T')[0];
+  return toLocalDateString(new Date());
 }
 
 function formatDate(dateStr: string) {
@@ -98,7 +100,7 @@ function getHeatmapDays(count = 90) {
   for (let i = count - 1; i >= 0; i--) {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
-    days.push(d.toISOString().split('T')[0]);
+    days.push(toLocalDateString(d));
   }
   return days;
 }
@@ -112,7 +114,7 @@ function getWeekDays() {
   return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((label, i) => {
     const d = new Date(monday);
     d.setDate(monday.getDate() + i);
-    return { label, dateStr: d.toISOString().split('T')[0] };
+    return { label, dateStr: toLocalDateString(d) };
   });
 }
 
@@ -389,8 +391,10 @@ export default function GoalDetailScreen() {
 
   if (!goal) {
     return (
-      <div className="app-container bg-background text-foreground h-[100dvh] flex items-center justify-center">
-        <p className="text-muted-foreground text-[15px]">Loading…</p>
+      <div className="app-container bg-background text-foreground h-[100dvh] flex flex-col p-4 space-y-6 pt-12">
+        <Skeleton className="w-1/2 h-8 rounded-[8px]" />
+        <Skeleton className="w-full h-32 rounded-[16px]" />
+        <Skeleton className="w-full h-40 rounded-[16px]" />
       </div>
     );
   }
@@ -897,7 +901,7 @@ function EditGoalSheet({
   const durationDays = startDate && deadline
     ? Math.max(0, Math.ceil(
       (new Date(deadline).getTime() - new Date(startDate).getTime()) / 86400000
-    ))
+    ) + 1)
     : 0;
 
   const handleSave = () => {

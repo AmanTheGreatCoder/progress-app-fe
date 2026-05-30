@@ -4,16 +4,17 @@ import { useAppStore } from '@/shared/store/useAppStore';
 import { BottomNav } from '@/shared/components/layout/BottomNav';
 import { BottomSheet } from '@/shared/components/ui/BottomSheet';
 import { TaskRow } from '@/shared/components/ui/TaskRow';
+import { Skeleton } from '@/shared/components/ui/Skeleton';
 
 export default function TodayScreen() {
   const { tasks, goals, points, targetPoints, fetchTasks, fetchGoals, fetchDashboard, toggleTaskCompletion } = useAppStore();
   const [showConfetti, setShowConfetti] = useState(false);
   const [isLogSheetOpen, setIsLogSheetOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchTasks('today');
-    fetchGoals();
-    fetchDashboard();
+    setLoading(true);
+    Promise.all([fetchTasks('today'), fetchGoals(), fetchDashboard()]).finally(() => setLoading(false));
   }, [fetchTasks, fetchGoals, fetchDashboard]);
 
   const incompleteTasks = tasks.filter(t => !t.completed);
@@ -46,92 +47,115 @@ export default function TodayScreen() {
         </header>
 
         <section className="flex flex-col items-center">
-          <div className="relative w-48 h-48 mb-4 drop-shadow-xl">
-            <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
-              <circle cx="50" cy="50" r="45" fill="none" className="stroke-muted" strokeWidth="8" />
-              <circle
-                cx="50" cy="50" r="45"
-                fill="none"
-                className="stroke-primary transition-all duration-1000 ease-out"
-                strokeWidth="8"
-                strokeDasharray={`${(points / targetPoints) * 283} 283`}
-                strokeLinecap="round"
-              />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-[48px] font-[800] leading-none tracking-[-0.4px] text-foreground">{points}</span>
-              <span className="text-muted-foreground text-[14px] font-[500] mt-1">/ {targetPoints} pts</span>
+          {loading ? (
+            <Skeleton className="w-48 h-48 rounded-full mb-4" />
+          ) : (
+            <div className="relative w-48 h-48 mb-4 drop-shadow-xl">
+              <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
+                <circle cx="50" cy="50" r="45" fill="none" className="stroke-muted" strokeWidth="8" />
+                <circle
+                  cx="50" cy="50" r="45"
+                  fill="none"
+                  className="stroke-primary transition-all duration-1000 ease-out"
+                  strokeWidth="8"
+                  strokeDasharray={`${(points / targetPoints) * 283} 283`}
+                  strokeLinecap="round"
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-[48px] font-[800] leading-none tracking-[-0.4px] text-foreground">{points}</span>
+                <span className="text-muted-foreground text-[14px] font-[500] mt-1">/ {targetPoints} pts</span>
+              </div>
             </div>
-          </div>
-          <p className="text-muted-foreground text-[14px] font-[500] text-center">
-            {points === 0 ? "Ready to crush it today?" :
-              points < targetPoints / 2 ? "Keep the momentum going!" :
-                points < targetPoints ? "Almost there, push through!" :
-                  "Target hit! Outstanding work."}
-          </p>
+          )}
+          {!loading && (
+            <p className="text-muted-foreground text-[14px] font-[500] text-center">
+              {points === 0 ? "Ready to crush it today?" :
+                points < targetPoints / 2 ? "Keep the momentum going!" :
+                  points < targetPoints ? "Almost there, push through!" :
+                    "Target hit! Outstanding work."}
+            </p>
+          )}
         </section>
 
         <section>
           <h2 className="text-[20px] font-[700] tracking-[-0.4px] mb-2 text-foreground">Active Streaks</h2>
-          <div className="flex overflow-x-auto hide-scrollbar gap-4 pb-2 -mx-4 px-4">
-            {goals.map(goal => {
-              const Icon = goal.category === 'Health' ? Play : goal.category === 'Learning' ? Calendar : Target;
-              const streak = goal.streak || 0;
-              return (
-                <div
-                  key={goal.id}
-                  className="flex-shrink-0 w-32 bg-card rounded-[16px] p-4 flex flex-col items-center text-center border border-border shadow-sm transition-transform active:scale-95"
-                >
-                  <div className="w-10 h-10 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center mb-3">
-                    <Icon size={16} />
+          {loading ? (
+            <div className="flex overflow-hidden gap-4 pb-2 -mx-4 px-4">
+              <Skeleton className="flex-shrink-0 w-32 h-[120px] rounded-[16px]" />
+              <Skeleton className="flex-shrink-0 w-32 h-[120px] rounded-[16px]" />
+              <Skeleton className="flex-shrink-0 w-32 h-[120px] rounded-[16px]" />
+            </div>
+          ) : (
+            <div className="flex overflow-x-auto hide-scrollbar gap-4 pb-2 -mx-4 px-4">
+              {goals.map(goal => {
+                const Icon = goal.category === 'Health' ? Play : goal.category === 'Learning' ? Calendar : Target;
+                const streak = goal.streak || 0;
+                return (
+                  <div
+                    key={goal.id}
+                    className="flex-shrink-0 w-32 bg-card rounded-[16px] p-4 flex flex-col items-center text-center border border-border shadow-sm transition-transform active:scale-95"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center mb-3">
+                      <Icon size={16} />
+                    </div>
+                    <h3 className="text-[14px] font-[600] text-foreground leading-tight mb-2 line-clamp-2">{goal.title}</h3>
+                    <div className="mt-auto flex items-center gap-1.5 text-[14px] font-[500]">
+                      <Flame size={16} className={streak > 0 ? "text-orange-500" : "text-muted-foreground"} />
+                      <span className={streak > 0 ? "text-foreground" : "text-muted-foreground"}>
+                        {streak} {streak === 1 ? 'day' : 'days'}
+                      </span>
+                    </div>
                   </div>
-                  <h3 className="text-[14px] font-[600] text-foreground leading-tight mb-2 line-clamp-2">{goal.title}</h3>
-                  <div className="mt-auto flex items-center gap-1.5 text-[14px] font-[500]">
-                    <Flame size={16} className={streak > 0 ? "text-orange-500" : "text-muted-foreground"} />
-                    <span className={streak > 0 ? "text-foreground" : "text-muted-foreground"}>
-                      {streak} {streak === 1 ? 'day' : 'days'}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </section>
 
         <section>
           <h2 className="text-[20px] font-[700] tracking-[-0.4px] mb-2 text-foreground">Today's Tasks</h2>
 
-          {incompleteTasks.length === 0 && completedTasks.length > 0 && (
-            <div className="py-8 flex flex-col items-center justify-center text-center bg-card border border-border rounded-[16px] shadow-sm p-6 mb-6">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4 text-primary">
-                <Check size={32} />
-              </div>
-              <h3 className="text-[20px] font-[700] mb-2 text-foreground tracking-[-0.4px]">All done for today!</h3>
-              <p className="text-muted-foreground text-[16px] font-[400]">You've completed all your scheduled tasks.</p>
+          {loading ? (
+            <div className="space-y-3 mb-6">
+              <Skeleton className="w-full h-[60px] rounded-[16px]" />
+              <Skeleton className="w-full h-[60px] rounded-[16px]" />
             </div>
-          )}
+          ) : (
+            <>
+              {incompleteTasks.length === 0 && completedTasks.length > 0 && (
+                <div className="py-8 flex flex-col items-center justify-center text-center bg-card border border-border rounded-[16px] shadow-sm p-6 mb-6">
+                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4 text-primary">
+                    <Check size={32} />
+                  </div>
+                  <h3 className="text-[20px] font-[700] mb-2 text-foreground tracking-[-0.4px]">All done for today!</h3>
+                  <p className="text-muted-foreground text-[16px] font-[400]">You've completed all your scheduled tasks.</p>
+                </div>
+              )}
 
-          {incompleteTasks.length > 0 && (
-            <div className="bg-card border border-border rounded-[16px] overflow-hidden shadow-sm mb-6">
-              {incompleteTasks.map((task, i) => (
-                <TaskRow key={task.id} task={task} goals={goals} isLast={i === incompleteTasks.length - 1} onToggle={() => handleToggleTask(task.id)} />
-              ))}
-            </div>
-          )}
+              {incompleteTasks.length > 0 && (
+                <div className="bg-card border border-border rounded-[16px] overflow-hidden shadow-sm mb-6">
+                  {incompleteTasks.map((task, i) => (
+                    <TaskRow key={task.id} task={task} goals={goals} isLast={i === incompleteTasks.length - 1} onToggle={() => handleToggleTask(task.id)} />
+                  ))}
+                </div>
+              )}
 
-          {completedTasks.length > 0 && (
-            <div>
-              <div className="flex items-center gap-4 mb-4 mt-6">
-                <div className="h-px bg-border flex-1"></div>
-                <span className="text-muted-foreground text-[14px] font-[600]">Completed</span>
-                <div className="h-px bg-border flex-1"></div>
-              </div>
-              <div className="bg-card border border-border rounded-[16px] overflow-hidden shadow-sm opacity-60">
-                {completedTasks.map((task, i) => (
-                  <TaskRow key={task.id} task={task} goals={goals} isLast={i === completedTasks.length - 1} onToggle={() => handleToggleTask(task.id)} />
-                ))}
-              </div>
-            </div>
+              {completedTasks.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-4 mb-4 mt-6">
+                    <div className="h-px bg-border flex-1"></div>
+                    <span className="text-muted-foreground text-[14px] font-[600]">Completed</span>
+                    <div className="h-px bg-border flex-1"></div>
+                  </div>
+                  <div className="bg-card border border-border rounded-[16px] overflow-hidden shadow-sm opacity-60">
+                    {completedTasks.map((task, i) => (
+                      <TaskRow key={task.id} task={task} goals={goals} isLast={i === completedTasks.length - 1} onToggle={() => handleToggleTask(task.id)} />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
 

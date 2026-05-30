@@ -7,16 +7,17 @@ import { TaskGroup } from '@/shared/components/ui/TaskGroup';
 import { FilterChip } from '@/shared/components/ui/FilterChip';
 import { BottomSheet } from '@/shared/components/ui/BottomSheet';
 import { TaskRow } from '@/shared/components/ui/TaskRow';
+import { Skeleton } from '@/shared/components/ui/Skeleton';
 
 export default function TasksScreen() {
   const { tasks, goals, fetchTasks, fetchGoals, toggleTaskCompletion, activeFilter, setActiveFilter, selectedDate, setSelectedDate } = useAppStore();
-  const [viewMode, setViewMode] = useState<'Today' | 'All'>('Today');
   const [showSyncBanner, setShowSyncBanner] = useState(false);
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchTasks(selectedDate);
-    fetchGoals();
+    setLoading(true);
+    Promise.all([fetchTasks(selectedDate), fetchGoals()]).finally(() => setLoading(false));
   }, [selectedDate, fetchTasks, fetchGoals]);
 
   const normTags = (raw: unknown): string[] =>
@@ -31,12 +32,6 @@ export default function TasksScreen() {
     return true;
   });
 
-  if (viewMode === 'Today') {
-    displayedTasks = displayedTasks.filter(t =>
-      t.status === 'Overdue' || t.status === 'Today' || t.completed || (t.status === 'Recurring' && t.dueDateStr === 'Today')
-    );
-  }
-
   const overdue = displayedTasks.filter(t => !t.completed && t.status === 'Overdue');
   const today = displayedTasks.filter(t => !t.completed && t.status === 'Today');
   const upcoming = displayedTasks.filter(t => !t.completed && t.status === 'Upcoming');
@@ -48,17 +43,6 @@ export default function TasksScreen() {
       <div className="sticky top-0 z-30 bg-background/90 backdrop-blur-md pt-6 pb-3 px-4 border-b border-border shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-[24px] font-[700] tracking-[-0.4px]">Tasks</h1>
-          <div className="flex p-1 bg-secondary rounded-[8px]">
-            {(['Today', 'All'] as ('Today' | 'All')[]).map(v => (
-              <button
-                key={v}
-                onClick={() => setViewMode(v)}
-                className={`px-4 py-1 rounded-[6px] text-[13px] font-[600] transition-colors ${viewMode === v ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}
-              >
-                {v}
-              </button>
-            ))}
-          </div>
         </div>
 
         <p className="text-[13px] font-[500] text-muted-foreground">
@@ -112,30 +96,40 @@ export default function TasksScreen() {
       )}
 
       <div className="flex-1 overflow-y-auto pt-4 pb-6 space-y-6 flex flex-col px-4">
-        <TaskGroup title="Overdue" titleColor="text-destructive" tasks={overdue} goals={goals} onToggle={toggleTaskCompletion} />
-        <TaskGroup title="Today" tasks={today} goals={goals} onToggle={toggleTaskCompletion} />
-        {viewMode === 'All' && <TaskGroup title="Upcoming" tasks={upcoming} goals={goals} onToggle={toggleTaskCompletion} />}
-        <TaskGroup title="Recurring" tasks={recurring} goals={goals} onToggle={toggleTaskCompletion} isRecurring />
+        {loading ? (
+          <>
+            <Skeleton className="w-full h-[80px]" />
+            <Skeleton className="w-full h-[80px]" />
+            <Skeleton className="w-full h-[80px]" />
+          </>
+        ) : (
+          <>
+            <TaskGroup title="Overdue" titleColor="text-destructive" tasks={overdue} goals={goals} onToggle={toggleTaskCompletion} />
+            <TaskGroup title="Today" tasks={today} goals={goals} onToggle={toggleTaskCompletion} />
+            <TaskGroup title="Upcoming" tasks={upcoming} goals={goals} onToggle={toggleTaskCompletion} />
+            <TaskGroup title="Recurring" tasks={recurring} goals={goals} onToggle={toggleTaskCompletion} isRecurring />
 
-        {completed.length > 0 && (
-          <div className="pt-4 border-t border-border">
-            <h3 className="text-[14px] font-[600] text-muted-foreground mb-3 px-2">Completed</h3>
-            <div className="bg-card border border-border rounded-[16px] overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.06)] opacity-60">
-              {completed.map((task, i) => (
-                <TaskRow key={task.id} task={task} goals={goals} isLast={i === completed.length - 1} onToggle={() => toggleTaskCompletion(task.id)} />
-              ))}
-            </div>
-          </div>
-        )}
+            {completed.length > 0 && (
+              <div className="pt-4 border-t border-border">
+                <h3 className="text-[14px] font-[600] text-muted-foreground mb-3 px-2">Completed</h3>
+                <div className="bg-card border border-border rounded-[16px] overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.06)] opacity-60">
+                  {completed.map((task, i) => (
+                    <TaskRow key={task.id} task={task} goals={goals} isLast={i === completed.length - 1} onToggle={() => toggleTaskCompletion(task.id)} />
+                  ))}
+                </div>
+              </div>
+            )}
 
-        {displayedTasks.length === 0 && (
-          <div className="flex flex-col items-center justify-center flex-1 text-center opacity-80 pb-12 mt-12">
-            <div className="w-16 h-16 bg-secondary rounded-full flex items-center justify-center mb-4">
-              <Check size={32} className="text-foreground" />
-            </div>
-            <h3 className="text-[18px] font-[600] text-foreground mb-1">All caught up!</h3>
-            <p className="text-[14px] text-muted-foreground font-[500]">Enjoy your free time.</p>
-          </div>
+            {displayedTasks.length === 0 && (
+              <div className="flex flex-col items-center justify-center flex-1 text-center opacity-80 pb-12 mt-12">
+                <div className="w-16 h-16 bg-secondary rounded-full flex items-center justify-center mb-4">
+                  <Check size={32} className="text-foreground" />
+                </div>
+                <h3 className="text-[18px] font-[600] text-foreground mb-1">All caught up!</h3>
+                <p className="text-[14px] text-muted-foreground font-[500]">Enjoy your free time.</p>
+              </div>
+            )}
+          </>
         )}
       </div>
 

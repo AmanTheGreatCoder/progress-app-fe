@@ -7,6 +7,8 @@ import {
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { api } from '@/api';
 import { BottomNav } from '@/shared/components/layout/BottomNav';
+import { toLocalDateString } from '@/shared/dateUtils';
+import { Skeleton } from '@/shared/components/ui/Skeleton';
 
 // ─── Constants ───────────────────────────────────────────
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -32,7 +34,7 @@ function getWeekDates(offset: number): string[] {
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(monday);
     d.setDate(monday.getDate() + i);
-    return d.toISOString().split('T')[0];
+    return toLocalDateString(d);
   });
 }
 
@@ -69,7 +71,7 @@ export default function AnalyticsScreen() {
   const [loadingTasks, setLoadingTasks] = useState(true);
   const [activeBar, setActiveBar]     = useState<number | null>(null);
 
-  const today      = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const today      = useMemo(() => toLocalDateString(new Date()), []);
   const weekDates  = useMemo(() => getWeekDates(weekOffset), [weekOffset]);
   const weekStart  = weekDates[0];
   const weekEnd    = weekDates[6];
@@ -257,8 +259,10 @@ export default function AnalyticsScreen() {
           <h2 className="text-[17px] font-[700] tracking-[-0.4px] mb-3">Daily Log</h2>
 
           {loadingTasks ? (
-            <div className="bg-card border border-border rounded-[12px] p-5 text-center">
-              <p className="text-[14px] text-muted-foreground">Loading…</p>
+            <div className="space-y-2">
+              <Skeleton className="w-full h-[60px]" />
+              <Skeleton className="w-full h-[60px]" />
+              <Skeleton className="w-full h-[60px]" />
             </div>
           ) : activeDays.length === 0 ? (
             <div className="bg-card border border-border rounded-[12px] p-5 text-center">

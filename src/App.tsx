@@ -1,5 +1,4 @@
 import AnalyticsScreen from '@/AnalyticsScreen';
-import { setAuthToken } from '@/api';
 import GoalDetailScreen from '@/GoalDetailScreen';
 import GoalsScreen from '@/GoalsScreen';
 import LoginScreen from '@/LoginScreen';
@@ -15,13 +14,8 @@ function App() {
   const { user, userLoading, fetchUser } = useAppStore();
 
   useEffect(() => {
-    // After Google OAuth redirect, the token arrives as ?token=...
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('token');
-    if (token) {
-      setAuthToken(token); // writes to both _token variable and localStorage atomically
-      window.history.replaceState({}, '', window.location.pathname);
-    }
+    // Token was already extracted from ?token= and saved in main.tsx
+    // before React rendered — just verify it against the backend.
     fetchUser();
   }, [fetchUser]);
 

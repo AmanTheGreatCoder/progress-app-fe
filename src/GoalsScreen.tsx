@@ -23,6 +23,8 @@ import { useAppStore } from '@/shared/store/useAppStore';
 import { BottomNav } from '@/shared/components/layout/BottomNav';
 import { BottomSheet } from '@/shared/components/ui/BottomSheet';
 import { FilterChip } from '@/shared/components/ui/FilterChip';
+import { toLocalDateString } from '@/shared/dateUtils';
+import { Skeleton } from '@/shared/components/ui/Skeleton';
 
 const CATEGORIES = ['Health', 'Career', 'Finance', 'Learning', 'Wellness'];
 const ICONS = { footprints: Footprints, book: Book, briefcase: Briefcase, heart: Heart, globe: Globe, 'piggy-bank': PiggyBank, target: Target, play: Play };
@@ -43,9 +45,11 @@ export default function GoalsScreen() {
   const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
   const [isArchivedExpanded, setIsArchivedExpanded] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchGoals();
+    setLoading(true);
+    fetchGoals().finally(() => setLoading(false));
   }, [fetchGoals]);
 
   // Derived State
@@ -129,7 +133,13 @@ export default function GoalsScreen() {
             />
           ))}
 
-          {displayedGoals.length === 0 && (
+          {loading ? (
+            <>
+              <Skeleton className="w-full h-[120px] rounded-[16px] mb-4" />
+              <Skeleton className="w-full h-[120px] rounded-[16px] mb-4" />
+              <Skeleton className="w-full h-[120px] rounded-[16px] mb-4" />
+            </>
+          ) : displayedGoals.length === 0 && (
             <div className="text-center py-6 text-muted-foreground text-[14px] font-[500]">
               No active goals found.
             </div>
@@ -319,8 +329,8 @@ function GoalCard({ goal, onLongPress, onClick }: { goal: any, onLongPress: () =
 }
 
 function AddGoalSheet({ onClose, onAdd }: { onClose: () => void, onAdd: (goal: any) => void }) {
-  const todayStr = new Date().toISOString().split('T')[0];
-  const ninetyDaysStr = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const todayStr = toLocalDateString(new Date());
+  const ninetyDaysStr = toLocalDateString(new Date(Date.now() + 90 * 24 * 60 * 60 * 1000));
 
   const [name, setName] = useState('My New Goal');
   const [category, setCategory] = useState<string>('Health');
@@ -343,7 +353,7 @@ function AddGoalSheet({ onClose, onAdd }: { onClose: () => void, onAdd: (goal: a
   };
 
   const durationDays = startDate && endDate
-    ? Math.max(0, Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000))
+    ? Math.max(0, Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000) + 1)
     : 90;
 
   return (

@@ -32,7 +32,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
           </div>
           <button
             onClick={() => window.location.reload()}
-            className="py-[10px] px-6 rounded-pill bg-c-primary border-none text-white text-base font-semibold cursor-pointer"
+            className="py-[10px] px-4 rounded-pill bg-c-primary border-none text-white text-base font-semibold cursor-pointer"
           >
             Reload app
           </button>

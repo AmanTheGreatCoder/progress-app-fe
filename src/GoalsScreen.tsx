@@ -1,102 +1,81 @@
-import React, { useState, useEffect, useRef } from 'react';
 import {
-  BarChart2,
+  Archive,
+  ArchiveRestore,
+  ArrowUpDown,
   Book,
   Briefcase,
-  Calendar,
-  Check,
   ChevronDown,
   ChevronUp,
+  Edit2,
   Flame,
   Footprints,
   Globe,
   Heart,
-  Home,
-  MoreVertical,
   PiggyBank,
   Play,
   Plus,
   Target,
-  User,
-  ArrowUpDown,
-  Archive,
-  ArchiveRestore,
   Trash2,
-  Edit2,
-  X,
-  Search
 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAppStore } from '@/shared/store/useAppStore';
+import { BottomNav } from '@/shared/components/layout/BottomNav';
+import { BottomSheet } from '@/shared/components/ui/BottomSheet';
+import { FilterChip } from '@/shared/components/ui/FilterChip';
 
-// Mock Data
-type Priority = 'High' | 'Medium' | 'Low';
-type Category = 'Health' | 'Learning' | 'Career' | 'Wellness' | 'Finance';
-type Goal = {
-  id: string;
-  name: string;
-  category: Category;
-  priority: Priority;
-  streak: number;
-  iconName: string;
-  startDate: string;
-  endDate: string;
-  lastLogged: string;
-  isArchived: boolean;
-};
-
-const INITIAL_GOALS: Goal[] = [
-  { id: '1', name: 'Morning Run', category: 'Health', priority: 'High', streak: 14, iconName: 'footprints', startDate: '2026-05-08', endDate: '2026-08-27', lastLogged: '2 hours ago', isArchived: false },
-  { id: '2', name: 'Read 20 Pages', category: 'Learning', priority: 'Medium', streak: 5, iconName: 'book', startDate: '2026-01-01', endDate: '2026-12-31', lastLogged: 'Yesterday', isArchived: false },
-  { id: '3', name: 'Deep Work Block', category: 'Career', priority: 'High', streak: 3, iconName: 'briefcase', startDate: '2026-05-01', endDate: '2026-06-30', lastLogged: '4 hours ago', isArchived: false },
-  { id: '4', name: 'Meditate', category: 'Wellness', priority: 'Low', streak: 0, iconName: 'heart', startDate: '2026-05-20', endDate: '2026-07-20', lastLogged: '3 days ago', isArchived: false },
-  { id: '5', name: 'Learn Spanish', category: 'Learning', priority: 'Medium', streak: 8, iconName: 'globe', startDate: '2026-04-01', endDate: '2026-10-01', lastLogged: 'Yesterday', isArchived: false },
-  { id: '6', name: 'Save This Month', category: 'Finance', priority: 'High', streak: 1, iconName: 'piggy-bank', startDate: '2026-05-01', endDate: '2026-05-31', lastLogged: 'Today', isArchived: false },
-  { id: '7', name: 'Evening Walk', category: 'Health', priority: 'Medium', streak: 12, iconName: 'footprints', startDate: '2026-01-01', endDate: '2026-03-01', lastLogged: '2 months ago', isArchived: true },
-  { id: '8', name: 'No Sugar Week', category: 'Wellness', priority: 'High', streak: 7, iconName: 'heart', startDate: '2026-04-10', endDate: '2026-04-17', lastLogged: '1 month ago', isArchived: true },
-];
-
-const CATEGORIES: Category[] = ['Health', 'Career', 'Finance', 'Learning', 'Wellness'];
+const CATEGORIES = ['Health', 'Career', 'Finance', 'Learning', 'Wellness'];
 const ICONS = { footprints: Footprints, book: Book, briefcase: Briefcase, heart: Heart, globe: Globe, 'piggy-bank': PiggyBank, target: Target, play: Play };
-const CATEGORY_COLORS: Record<Category, string> = { Health: 'bg-emerald-500', Career: 'bg-blue-500', Finance: 'bg-amber-500', Learning: 'bg-purple-500', Wellness: 'bg-pink-500' };
-const CATEGORY_TEXT_COLORS: Record<Category, string> = { Health: 'text-emerald-600 dark:text-emerald-400', Career: 'text-blue-600 dark:text-blue-400', Finance: 'text-amber-600 dark:text-amber-400', Learning: 'text-purple-600 dark:text-purple-400', Wellness: 'text-pink-600 dark:text-pink-400' };
-const CATEGORY_BG_COLORS: Record<Category, string> = { Health: 'bg-emerald-500/10', Career: 'bg-blue-500/10', Finance: 'bg-amber-500/10', Learning: 'bg-purple-500/10', Wellness: 'bg-pink-500/10' };
-const PRIORITY_COLORS: Record<Priority, string> = { High: 'text-destructive bg-destructive/10', Medium: 'text-amber-600 bg-amber-500/10', Low: 'text-muted-foreground bg-muted' };
-const PRIORITY_WEIGHT = { High: 3, Medium: 2, Low: 1 };
+const CATEGORY_COLORS: Record<string, string> = { Health: 'bg-emerald-500', Career: 'bg-blue-500', Finance: 'bg-amber-500', Learning: 'bg-purple-500', Wellness: 'bg-pink-500' };
+const CATEGORY_TEXT_COLORS: Record<string, string> = { Health: 'text-emerald-600 dark:text-emerald-400', Career: 'text-blue-600 dark:text-blue-400', Finance: 'text-amber-600 dark:text-amber-400', Learning: 'text-purple-600 dark:text-purple-400', Wellness: 'text-pink-600 dark:text-pink-400' };
+const CATEGORY_BG_COLORS: Record<string, string> = { Health: 'bg-emerald-500/10', Career: 'bg-blue-500/10', Finance: 'bg-amber-500/10', Learning: 'bg-purple-500/10', Wellness: 'bg-pink-500/10' };
+const PRIORITY_COLORS: Record<string, string> = { High: 'text-destructive bg-destructive/10', Medium: 'text-amber-600 bg-amber-500/10', Low: 'text-muted-foreground bg-muted' };
+const PRIORITY_WEIGHT: Record<string, number> = { High: 3, Medium: 2, Low: 1 };
 
-export default function GoalsScreen({ onNavigate, onGoalClick }: any) {
-  const [goals, setGoals] = useState<Goal[]>(INITIAL_GOALS);
-  const [activeFilter, setActiveFilter] = useState<Category | 'All'>('All');
+export default function GoalsScreen() {
+  const navigate = useNavigate();
+  const { goals, fetchGoals, addGoal, updateGoal, deleteGoal } = useAppStore();
+
+  const [activeFilter, setActiveFilter] = useState<string>('All');
   const [activeSort, setActiveSort] = useState<'Default' | 'Streak' | 'Recent'>('Default');
 
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
   const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
   const [isArchivedExpanded, setIsArchivedExpanded] = useState(false);
-  const [addSheetY, setAddSheetY] = useState(0);
-  const [contextSheetY, setContextSheetY] = useState(0);
+
+  useEffect(() => {
+    fetchGoals();
+  }, [fetchGoals]);
 
   // Derived State
-  const activeGoals = goals.filter(g => !g.isArchived);
-  const archivedGoals = goals.filter(g => g.isArchived);
+  const normalizedGoals = goals.map(g => ({
+    ...g,
+    start: (g as any).startDate ?? (g as any).start ?? (g as any).createdAt ?? '',
+    end: (g as any).deadline ?? (g as any).end ?? '',
+    icon: (g as any).iconName ?? (g as any).icon ?? g.category?.toLowerCase() ?? 'target',
+  }));
+
+  const activeGoals = normalizedGoals.filter(g => !g.archived);
+  const archivedGoals = normalizedGoals.filter(g => g.archived);
 
   let displayedGoals = activeGoals.filter(g => activeFilter === 'All' || g.category === activeFilter);
   displayedGoals = displayedGoals.sort((a, b) => {
-    if (activeSort === 'Default') return PRIORITY_WEIGHT[b.priority] - PRIORITY_WEIGHT[a.priority];
-    if (activeSort === 'Streak') return b.streak - a.streak;
-    // For 'Recent' mock string comparison just for demo
-    if (activeSort === 'Recent') return a.lastLogged.localeCompare(b.lastLogged);
+    if (activeSort === 'Default') return (PRIORITY_WEIGHT[b.priority || 'Medium'] || 1) - (PRIORITY_WEIGHT[a.priority || 'Medium'] || 1);
+    if (activeSort === 'Streak') return (b.streak || (b as any).done || 0) - (a.streak || (a as any).done || 0);
+    if (activeSort === 'Recent') return new Date((b as any).createdAt || 0).getTime() - new Date((a as any).createdAt || 0).getTime();
     return 0;
   });
 
-  // Handlers
   const handleArchive = (id: string) => {
-    setGoals(prev => prev.map(g => g.id === id ? { ...g, isArchived: true } : g));
+    updateGoal(id, { archived: true });
     setIsContextMenuOpen(false);
   };
   const handleRestore = (id: string) => {
-    setGoals(prev => prev.map(g => g.id === id ? { ...g, isArchived: false } : g));
+    updateGoal(id, { archived: false });
   };
   const handleDelete = (id: string) => {
-    setGoals(prev => prev.filter(g => g.id !== id));
+    deleteGoal(id);
   };
 
   const handleLongPress = (id: string) => {
@@ -104,19 +83,9 @@ export default function GoalsScreen({ onNavigate, onGoalClick }: any) {
     setIsContextMenuOpen(true);
   };
 
-  // Drag handlers for sheets
-  const handleAddTouchStart = (e: React.TouchEvent) => { };
-  const handleAddTouchMove = (e: React.TouchEvent) => { };
-  const handleAddTouchEnd = () => {
-    if (addSheetY > 150) setIsAddSheetOpen(false);
-    setAddSheetY(0);
-  };
-
   return (
-    <div className="app-container text-foreground bg-secondary/30">
-
-      {/* Sticky Header */}
-      <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border pt-12 pb-3 px-6 flex items-center justify-between">
+    <div className="app-container text-foreground bg-secondary/30 h-[100dvh] w-full overflow-hidden flex flex-col">
+      <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border pt-4 pb-3 px-4 flex items-center justify-between">
         <h1 className="text-[24px] font-[700] tracking-[-0.4px]">Goals</h1>
         <div className="flex items-center gap-3">
           <button
@@ -138,32 +107,25 @@ export default function GoalsScreen({ onNavigate, onGoalClick }: any) {
         </div>
       </div>
 
-      <div className="scroll-area pt-4 px-6">
-
-        {/* Category Filter Strip */}
-        <div className="flex overflow-x-auto hide-scrollbar gap-2 mb-6 -mx-6 px-6 pb-2">
+      <div className="scroll-area flex-1 overflow-y-auto overflow-x-hidden pt-4 px-4 pb-24">
+        <div className="flex overflow-x-auto hide-scrollbar gap-2 mb-6 -mx-4 px-4 pb-2">
           {['All', ...CATEGORIES].map((cat) => (
-            <button
+            <FilterChip
               key={cat}
-              onClick={() => setActiveFilter(cat as any)}
-              className={`flex-shrink-0 px-4 py-1.5 rounded-full text-[14px] font-[500] transition-colors border ${activeFilter === cat
-                ? 'bg-primary text-primary-foreground border-primary'
-                : 'bg-card text-muted-foreground border-border active:bg-secondary'
-                }`}
-            >
-              {cat}
-            </button>
+              label={cat}
+              active={activeFilter === cat}
+              onClick={() => setActiveFilter(cat)}
+            />
           ))}
         </div>
 
-        {/* Goal Cards */}
         <div className="space-y-4 mb-8">
           {displayedGoals.map(goal => (
             <GoalCard
               key={goal.id}
               goal={goal}
               onLongPress={() => handleLongPress(goal.id)}
-              onClick={onGoalClick}
+              onClick={() => navigate(`/goals/${goal.id}`)}
             />
           ))}
           {displayedGoals.length === 0 && (
@@ -173,11 +135,10 @@ export default function GoalsScreen({ onNavigate, onGoalClick }: any) {
           )}
         </div>
 
-        {/* Archived Section */}
         {archivedGoals.length > 0 && (
           <div className="mb-8">
             <button
-              className="w-full flex items-center justify-between p-4 bg-card border border-border rounded-[8px] active:bg-secondary transition-colors"
+              className="w-full flex items-center justify-between p-4 bg-card border border-border rounded-[16px] active:bg-secondary transition-colors"
               onClick={() => setIsArchivedExpanded(!isArchivedExpanded)}
             >
               <div className="flex items-center gap-2 text-muted-foreground">
@@ -190,14 +151,14 @@ export default function GoalsScreen({ onNavigate, onGoalClick }: any) {
             {isArchivedExpanded && (
               <div className="mt-4 space-y-3 opacity-70">
                 {archivedGoals.map(goal => (
-                  <div key={goal.id} className="bg-card border border-border rounded-[8px] p-4 flex items-center justify-between">
+                  <div key={goal.id} className="bg-card border border-border rounded-[12px] p-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-muted-foreground">
-                        {React.createElement((ICONS as any)[goal.iconName] || Target, { size: 16 })}
+                        {React.createElement((ICONS as any)[(goal as any).icon || 'target'] || Target, { size: 16 })}
                       </div>
                       <div>
-                        <h4 className="text-[16px] font-[500] text-foreground mb-0.5">{goal.name}</h4>
-                        <span className="text-[12px] text-muted-foreground">Ended • {goal.streak} day streak</span>
+                        <h4 className="text-[16px] font-[600] text-foreground mb-0.5">{goal.title}</h4>
+                        <span className="text-[12px] text-muted-foreground font-[500]">Ended • {goal.streak || (goal as any).done || 0} day streak</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -216,76 +177,49 @@ export default function GoalsScreen({ onNavigate, onGoalClick }: any) {
         )}
       </div>
 
-      {/* Bottom Nav */}
-      <nav className="absolute bottom-0 w-full h-[80px] bg-card border-t border-border flex items-center justify-between px-6 pb-safe z-40">
-        <NavItem icon={Home} label="Today" onClick={() => onNavigate('Today')} />
-        <NavItem icon={Target} label="Goals" active onClick={() => onNavigate('Goals')} />
-        <NavItem icon={Check} label="Tasks" onClick={() => onNavigate('Tasks')} />
-        <NavItem icon={BarChart2} label="Analytics" onClick={() => onNavigate('Analytics')} />
-        <NavItem icon={User} label="Profile" onClick={() => onNavigate('Profile')} />
-      </nav>
+      <BottomNav />
 
-      {/* Context Menu Bottom Sheet */}
-      {isContextMenuOpen && (
-        <div className="absolute inset-0 z-50 overflow-hidden">
-          <div
-            className="absolute inset-0 bg-foreground/20 backdrop-blur-sm transition-opacity"
-            onClick={() => setIsContextMenuOpen(false)}
-          />
-          <div
-            className="absolute bottom-0 left-0 right-0 bg-card rounded-t-[16px] shadow-[0_4px_6px_-2px_rgba(0,0,0,0.05),0_10px_15px_-3px_rgba(0,0,0,0.1)] pb-safe transform transition-transform duration-300"
-            style={{ animation: 'slide-up 0.2s cubic-bezier(0.16, 1, 0.3, 1)' }}
+      <BottomSheet isOpen={isContextMenuOpen} onClose={() => setIsContextMenuOpen(false)} title="Options">
+        <div className="px-2 pb-2">
+          <button className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-secondary rounded-[12px] transition-colors">
+            <Play size={18} className="text-primary" />
+            <span className="text-[16px] font-[600] text-foreground">Log Session</span>
+          </button>
+          <button className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-secondary rounded-[12px] transition-colors">
+            <Edit2 size={18} className="text-foreground" />
+            <span className="text-[16px] font-[600] text-foreground">Edit Goal</span>
+          </button>
+          <div className="h-px bg-border my-1 mx-2" />
+          <button
+            onClick={() => selectedGoalId && handleArchive(selectedGoalId)}
+            className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-destructive/10 rounded-[12px] transition-colors text-destructive"
           >
-            <div className="p-4 pt-3 flex justify-center">
-              <div className="w-12 h-1.5 bg-muted rounded-full" />
-            </div>
-            <div className="px-2 pb-2">
-              <button className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-secondary rounded-[8px] transition-colors">
-                <Play size={18} className="text-primary" />
-                <span className="text-[16px] font-[500] text-foreground">Log Session</span>
-              </button>
-              <button className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-secondary rounded-[8px] transition-colors">
-                <Edit2 size={18} className="text-foreground" />
-                <span className="text-[16px] font-[500] text-foreground">Edit Goal</span>
-              </button>
-              <div className="h-px bg-border my-1 mx-2" />
-              <button
-                onClick={() => selectedGoalId && handleArchive(selectedGoalId)}
-                className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-destructive/10 rounded-[8px] transition-colors text-destructive"
-              >
-                <Archive size={18} />
-                <span className="text-[16px] font-[500]">Archive Goal</span>
-              </button>
-            </div>
-          </div>
+            <Archive size={18} />
+            <span className="text-[16px] font-[600]">Archive Goal</span>
+          </button>
         </div>
-      )}
+      </BottomSheet>
 
-      {/* Add Goal Bottom Sheet */}
       {isAddSheetOpen && (
         <AddGoalSheet
           onClose={() => setIsAddSheetOpen(false)}
-          onTouchStart={handleAddTouchStart}
-          onTouchMove={handleAddTouchMove}
-          onTouchEnd={handleAddTouchEnd}
-          sheetY={addSheetY}
+          onAdd={(newGoal: any) => {
+            addGoal(newGoal);
+            setIsAddSheetOpen(false);
+          }}
         />
       )}
-
     </div>
   );
 }
 
-// Subcomponents
+function GoalCard({ goal, onLongPress, onClick }: { goal: any, onLongPress: () => void, onClick?: () => void }) {
+  const IconCmp = (ICONS as any)[goal.icon] || Target;
 
-function GoalCard({ goal, onLongPress, onClick }: { goal: Goal, onLongPress: () => void, onClick?: () => void }) {
-  const IconCmp = (ICONS as any)[goal.iconName] || Target;
-
-  // Fake progress calculation
-  const start = new Date(goal.startDate).getTime();
-  const end = new Date(goal.endDate).getTime();
+  const start = new Date(goal.start).getTime();
+  const end = new Date(goal.end).getTime();
   const now = Date.now();
-  const progressPercent = Math.max(0, Math.min(100, ((now - start) / (end - start)) * 100));
+  const progressPercent = Math.max(0, Math.min(100, ((now - start) / ((end - start) || 1)) * 100));
 
   const remainingMs = end - now;
   let remainingText = '';
@@ -300,9 +234,13 @@ function GoalCard({ goal, onLongPress, onClick }: { goal: Goal, onLongPress: () 
   const startPress = () => { pressTimer = setTimeout(onLongPress, 500); };
   const cancelPress = () => { clearTimeout(pressTimer); };
 
+  const streak = goal.streak || goal.done || 0;
+  const category = goal.category || 'General';
+  const priority = goal.priority || 'Medium';
+
   return (
     <div
-      className="relative bg-card border border-border rounded-[12px] p-4 flex flex-col shadow-[0_1px_2px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.1)] overflow-hidden active:scale-[0.98] transition-transform select-none"
+      className="relative bg-card border border-border rounded-[16px] p-4 flex flex-col shadow-sm overflow-hidden active:scale-[0.98] transition-transform select-none"
       onClick={onClick}
       onTouchStart={startPress}
       onTouchEnd={cancelPress}
@@ -311,181 +249,210 @@ function GoalCard({ goal, onLongPress, onClick }: { goal: Goal, onLongPress: () 
       onMouseUp={cancelPress}
       onMouseLeave={cancelPress}
     >
-      {/* Accent Bar */}
-      <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${CATEGORY_COLORS[goal.category]}`} />
+      <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${CATEGORY_COLORS[category] || 'bg-primary'}`} />
 
       <div className="flex items-start justify-between mb-3 ml-2">
         <div className="flex items-center gap-3">
-          <div className={`w-12 h-12 rounded-full flex items-center justify-center ${CATEGORY_BG_COLORS[goal.category]} ${CATEGORY_TEXT_COLORS[goal.category]}`}>
+          <div className={`w-12 h-12 rounded-full flex items-center justify-center ${CATEGORY_BG_COLORS[category] || 'bg-primary/10'} ${CATEGORY_TEXT_COLORS[category] || 'text-primary'}`}>
             <IconCmp size={20} />
           </div>
           <div>
-            <h3 className="text-[18px] font-[600] text-foreground tracking-[-0.4px] leading-tight mb-1.5">{goal.name}</h3>
+            <h3 className="text-[18px] font-[700] text-foreground tracking-[-0.4px] leading-tight mb-1.5">{goal.title}</h3>
             <div className="flex items-center gap-2 text-[12px] font-[600]">
-              <span className="px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">{goal.category}</span>
-              <span className={`px-2 py-0.5 rounded-full ${PRIORITY_COLORS[goal.priority]}`}>{goal.priority}</span>
+              <span className="px-2 py-0.5 rounded-[4px] bg-secondary text-secondary-foreground">{category}</span>
+              <span className={`px-2 py-0.5 rounded-[4px] ${PRIORITY_COLORS[priority] || PRIORITY_COLORS.Medium}`}>{priority}</span>
             </div>
           </div>
         </div>
-      </div >
+      </div>
 
       <div className="ml-2 mt-2">
         <div className="flex justify-between items-end mb-3">
           <div className="flex items-center gap-1.5 text-[14px] font-[600]">
-            <Flame size={16} className={goal.streak > 0 ? "text-orange-500" : "text-muted-foreground"} />
-            <span className={goal.streak > 0 ? "text-foreground" : "text-muted-foreground"}>
-              {goal.streak} day streak
+            <Flame size={16} className={streak > 0 ? "text-orange-500" : "text-muted-foreground"} />
+            <span className={streak > 0 ? "text-foreground" : "text-muted-foreground"}>
+              {streak} day streak
             </span>
           </div>
           <span className="text-[12px] text-muted-foreground font-[500]">
-            Ends {new Date(goal.endDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+            Ends {new Date(goal.end || Date.now()).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
           </span>
         </div>
 
-        {/* Progress Details */}
         <div className="flex justify-between items-center mb-1.5">
-          <span className="text-[12px] font-[600] text-foreground">
+          <span className="text-[12px] font-[700] text-foreground">
             {Math.round(progressPercent)}% complete
           </span>
-          <span className={`text-[12px] font-[600] ${remainingMs < (7 * 24 * 60 * 60 * 1000) && remainingMs > 0 ? 'text-orange-500' : 'text-muted-foreground'}`}>
+          <span className={`text-[12px] font-[700] ${remainingMs < (7 * 24 * 60 * 60 * 1000) && remainingMs > 0 ? 'text-orange-500' : 'text-muted-foreground'}`}>
             {remainingText}
           </span>
         </div>
 
-        {/* Progress bar */}
-        <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden mb-2">
+        <div className="w-full h-2 bg-secondary rounded-full overflow-hidden mb-2">
           <div
-            className={`h-full rounded-full ${CATEGORY_COLORS[goal.category]}`}
+            className={`h-full rounded-full ${CATEGORY_COLORS[category] || 'bg-primary'}`}
             style={{ width: `${progressPercent}%` }}
           />
         </div>
 
-        <div className="text-[11px] font-[500] text-muted-foreground text-right mt-1">
-          Last logged: {goal.lastLogged}
+        <div className="text-[12px] font-[600] text-muted-foreground text-right mt-1">
+          Target: {goal.targetFrequency || 0} / week
         </div>
       </div>
-    </div >
+    </div>
   );
 }
 
-function AddGoalSheet({ onClose, onTouchStart, onTouchMove, onTouchEnd, sheetY }: any) {
-  const [name, setName] = useState('My New Goal');
-  const [category, setCategory] = useState<Category>('Health');
-  const [priority, setPriority] = useState<Priority>('Medium');
-  const [icon, setIcon] = useState('target');
+function AddGoalSheet({ onClose, onAdd }: { onClose: () => void, onAdd: (goal: any) => void }) {
+  const todayStr = new Date().toISOString().split('T')[0];
+  const ninetyDaysStr = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-  const mockPreviewGoal: Goal = {
-    id: 'preview', name: name || 'Goal Name', category, priority, streak: 0, iconName: icon, startDate: new Date().toISOString(), endDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(), lastLogged: 'Never', isArchived: false
+  const [name, setName] = useState('My New Goal');
+  const [category, setCategory] = useState<string>('Health');
+  const [priority, setPriority] = useState<string>('Medium');
+  const [icon, setIcon] = useState('target');
+  const [startDate, setStartDate] = useState(todayStr);
+  const [endDate, setEndDate] = useState(ninetyDaysStr);
+
+  const mockPreviewGoal = {
+    id: 'preview',
+    title: name || 'Goal Name',
+    category,
+    priority,
+    done: 0,
+    streak: 0,
+    icon,
+    start: startDate || todayStr,
+    end: endDate || ninetyDaysStr,
+    archived: false,
   };
 
+  const durationDays = startDate && endDate
+    ? Math.max(0, Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000))
+    : 90;
+
   return (
-    <div className="absolute inset-0 z-50 overflow-hidden flex flex-col justify-end">
-      <div className="absolute inset-0 bg-foreground/20 backdrop-blur-sm transition-opacity" onClick={onClose} />
-      <div
-        className="relative bg-card rounded-t-[24px] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col"
-        style={{
-          animation: 'slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-          transform: `translateY(${sheetY}px)`,
-          height: '92dvh'
+    <BottomSheet isOpen={true} onClose={onClose} title="New Goal" footer={
+      <button
+        onClick={() => {
+          onAdd({
+            title: name,
+            category,
+            priority,
+            targetFrequency: 3,
+            startDate,
+            deadline: endDate,
+            iconName: icon,
+          });
         }}
+        className="w-full h-[48px] rounded-[12px] bg-primary text-primary-foreground text-[16px] font-[600] active:scale-[0.98] transition-all"
       >
-        <div
-          className="p-4 pt-3 pb-2 flex justify-center cursor-grab active:cursor-grabbing shrink-0"
-          onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
-        >
-          <div className="w-12 h-1.5 bg-muted rounded-full" />
+        Create Goal
+      </button>
+    }>
+      <div className="px-0 py-2 shrink-0 bg-secondary/30 border border-border rounded-[12px] mb-4">
+        <p className="text-[12px] font-[700] text-muted-foreground uppercase tracking-[0.8px] mb-2 px-4 pt-2">Live Preview</p>
+        <div className="pointer-events-none px-4 pb-2">
+          <GoalCard goal={mockPreviewGoal} onLongPress={() => { }} />
+        </div>
+      </div>
+
+      <div className="space-y-6">
+        <div>
+          <label className="block text-[14px] font-[600] mb-2 text-foreground">Goal Name</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Run 5k"
+            className="w-full h-[48px] border border-input rounded-[12px] px-4 bg-background text-[16px] font-[400] text-foreground outline-none focus:border-primary transition-all"
+          />
         </div>
 
-        <div className="px-6 pb-2 shrink-0 flex justify-between items-center">
-          <h2 className="text-[20px] font-[700] tracking-[-0.4px]">New Goal</h2>
-          <button onClick={onClose} className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center text-muted-foreground active:opacity-70"><X size={18} /></button>
-        </div>
-
-        {/* Live Preview area (sticky top) */}
-        <div className="px-6 py-4 shrink-0 bg-secondary/30 border-b border-border">
-          <p className="text-[12px] font-[600] text-muted-foreground uppercase tracking-[0.8px] mb-2">Live Preview</p>
-          <div className="pointer-events-none">
-            <GoalCard goal={mockPreviewGoal} onLongPress={() => { }} />
+        <div>
+          <label className="block text-[14px] font-[600] mb-2 text-foreground">Category</label>
+          <div className="flex flex-wrap gap-2">
+            {CATEGORIES.map(cat => (
+              <FilterChip
+                key={cat}
+                label={cat}
+                active={category === cat}
+                onClick={() => setCategory(cat)}
+              />
+            ))}
           </div>
         </div>
 
-        {/* Scrollable Form */}
-        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6 pb-24">
-
-          <div>
-            <label className="block text-[14px] font-[500] mb-2 text-foreground">Goal Name</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Run 5k"
-              className="w-full h-[40px] border border-input rounded-[8px] px-3 bg-background text-[16px] font-[400] text-foreground outline-none focus:border-ring focus:ring-1 focus:ring-ring transition-all"
-            />
+        <div>
+          <label className="block text-[14px] font-[600] mb-2 text-foreground">Priority</label>
+          <div className="flex p-1 bg-secondary rounded-[12px]">
+            {['High', 'Medium', 'Low'].map(p => (
+              <button
+                key={p}
+                onClick={() => setPriority(p)}
+                className={`flex-1 py-2 rounded-[10px] text-[14px] font-[600] transition-all ${priority === p ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}
+              >
+                {p}
+              </button>
+            ))}
           </div>
+        </div>
 
-          <div>
-            <label className="block text-[14px] font-[500] mb-2 text-foreground">Category</label>
-            <div className="flex flex-wrap gap-2">
-              {CATEGORIES.map(cat => (
+        {/* ── Date Range ── */}
+        <div>
+          <label className="block text-[14px] font-[600] mb-2 text-foreground">Timeframe</label>
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <p className="text-[12px] font-[500] text-muted-foreground mb-1.5">Start date</p>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => {
+                  setStartDate(e.target.value);
+                  // if end is now before start, push end forward
+                  if (endDate && e.target.value && e.target.value > endDate) {
+                    setEndDate(e.target.value);
+                  }
+                }}
+                className="w-full h-[44px] border border-input rounded-[12px] px-3 bg-background text-[14px] font-[500] text-foreground outline-none focus:border-primary transition-all appearance-none"
+              />
+            </div>
+            <div className="flex-1">
+              <p className="text-[12px] font-[500] text-muted-foreground mb-1.5">End date</p>
+              <input
+                type="date"
+                value={endDate}
+                min={startDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full h-[44px] border border-input rounded-[12px] px-3 bg-background text-[14px] font-[500] text-foreground outline-none focus:border-primary transition-all appearance-none"
+              />
+            </div>
+          </div>
+          {durationDays > 0 && (
+            <p className="text-[12px] text-muted-foreground mt-2 text-center">
+              {durationDays} day{durationDays !== 1 ? 's' : ''} total
+            </p>
+          )}
+        </div>
+
+        <div>
+          <label className="block text-[14px] font-[600] mb-2 text-foreground">Icon</label>
+          <div className="grid grid-cols-6 gap-2">
+            {Object.keys(ICONS).map(key => {
+              const Ic = (ICONS as any)[key];
+              return (
                 <button
-                  key={cat} onClick={() => setCategory(cat)}
-                  className={`px-4 py-2 rounded-full text-[14px] font-[500] border transition-colors ${category === cat ? `${CATEGORY_BG_COLORS[cat]} ${CATEGORY_TEXT_COLORS[cat]} border-transparent` : 'bg-card text-muted-foreground border-border'}`}
+                  key={key}
+                  onClick={() => setIcon(key)}
+                  className={`aspect-square rounded-[12px] flex items-center justify-center border transition-all ${icon === key ? 'bg-primary text-primary-foreground border-primary scale-110 shadow-sm' : 'bg-card text-muted-foreground border-border active:bg-secondary'}`}
                 >
-                  {cat}
+                  <Ic size={20} />
                 </button>
-              ))}
-            </div>
+              );
+            })}
           </div>
-
-          <div>
-            <label className="block text-[14px] font-[500] mb-2 text-foreground">Priority</label>
-            <div className="flex p-1 bg-secondary rounded-[8px]">
-              {(['High', 'Medium', 'Low'] as Priority[]).map(p => (
-                <button
-                  key={p} onClick={() => setPriority(p)}
-                  className={`flex-1 py-1.5 rounded-[6px] text-[14px] font-[500] transition-colors ${priority === p ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-[14px] font-[500] mb-2 text-foreground">Icon</label>
-            <div className="grid grid-cols-6 gap-2">
-              {Object.keys(ICONS).map(key => {
-                const Ic = (ICONS as any)[key];
-                return (
-                  <button
-                    key={key} onClick={() => setIcon(key)}
-                    className={`aspect-square rounded-[8px] flex items-center justify-center border transition-all ${icon === key ? 'bg-primary text-primary-foreground border-primary scale-110 shadow-sm' : 'bg-card text-muted-foreground border-border active:bg-secondary'}`}
-                  >
-                    <Ic size={20} />
-                  </button>
-                )
-              })}
-            </div>
-          </div >
-
-        </div >
-
-        {/* Fixed Bottom Action */}
-        < div className="p-6 bg-card border-t border-border pb-safe shrink-0" >
-          <button className="w-full h-[44px] rounded-[8px] bg-primary text-primary-foreground text-[16px] font-[600] active:opacity-90 transition-opacity">
-            Create Goal
-          </button>
-        </div >
-      </div >
-    </div >
-  );
-}
-
-function NavItem({ icon: Icon, label, active, onClick }: any) {
-  return (
-    <button onClick={onClick} className={`flex flex-col items-center justify-center gap-1 min-w-[64px] h-full ${active ? 'text-foreground' : 'text-muted-foreground'}`}>
-      <Icon size={20} className={active ? 'text-foreground' : 'text-muted-foreground'} />
-      <span className="text-[11px] font-[500] leading-none">{label}</span>
-    </button>
+        </div>
+      </div>
+    </BottomSheet>
   );
 }

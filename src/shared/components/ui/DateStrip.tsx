@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { getLocalYMD, DAY_NAMES, addDays, todayDate } from '@shared/utils/dateUtils';
 
-export const STRIP_DAYS = (() => {
+const STRIP_DAYS = (() => {
   const days = [];
   const t = todayDate();
   for (let i = -30; i <= 30; i++) {
@@ -35,7 +35,7 @@ export const DateStrip: React.FC<{
   return (
     <div
       ref={scrollRef}
-      className="flex gap-2 pt-4 pb-6 overflow-x-auto"
+      className="flex gap-2 pt-2 pb-4 overflow-x-auto px-4 -mx-4 hide-scrollbar"
       style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
     >
       {STRIP_DAYS.map(d => {
@@ -45,26 +45,21 @@ export const DateStrip: React.FC<{
             key={d.key}
             ref={d.isToday ? todayRef : undefined}
             onClick={() => onSelect(d.key)}
-            className={`flex flex-col items-center gap-0.5 pt-[10px] pb-3 rounded-card min-w-[50px] cursor-pointer relative border
+            className={`flex flex-col items-center justify-center gap-0.5 py-2.5 rounded-[12px] min-w-[56px] cursor-pointer relative border transition-all duration-200 shrink-0
               ${active
-                ? 'bg-c-primary border-c-primary text-white -translate-y-0.5'
-                : 'bg-c-surface border-c-border text-c-text1 translate-y-0'
+                ? 'bg-primary border-primary text-primary-foreground shadow-sm scale-105'
+                : 'bg-card border-border text-foreground hover:bg-secondary'
               }
             `}
-            style={{
-              boxShadow: active ? '0 10px 24px rgba(124,106,247,0.45)' : 'none',
-              transition: 'transform 240ms cubic-bezier(.2,.8,.2,1), background 200ms, box-shadow 240ms',
-            }}
           >
             <span
-              className="text-2xs font-bold uppercase tracking-label"
-              style={{
-                color: active ? 'rgba(255,255,255,0.85)' : d.isToday ? 'var(--primary)' : 'var(--text-secondary)',
-              }}
+              className={`text-[11px] font-[600] uppercase tracking-wide ${
+                active ? 'text-primary-foreground/90' : d.isToday ? 'text-primary' : 'text-muted-foreground'
+              }`}
             >
               {d.dayName}
             </span>
-            <span className={`text-xl font-bold leading-none tracking-tight ${active ? 'text-white' : 'text-c-text1'}`}>
+            <span className={`text-[18px] font-[700] leading-none tracking-tight ${active ? 'text-primary-foreground' : 'text-foreground'}`}>
               {d.dayNum}
             </span>
           </button>

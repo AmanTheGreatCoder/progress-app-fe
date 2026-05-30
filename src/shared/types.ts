@@ -1,14 +1,6 @@
-export interface ManualLog {
-  date: string;
-  minutes: number;
-  note: string;
-}
 
-export type Category = 'Health' | 'Career' | 'Finance' | 'Learning' | 'Wellness';
-export type Priority = 'High' | 'Medium' | 'Low';
 
-// A TaskSeries summary as returned by /api/tasks/series and embedded in goals
-export interface TaskSeriesSummary {
+interface TaskSeriesSummary {
   id:        string;
   name:      string;
   tags:      string[];
@@ -20,8 +12,8 @@ export interface TaskSeriesSummary {
 export interface Goal {
   id: string;
   title: string;
-  category: Category;
-  priority: Priority;
+  category: string;
+  priority: string;
   start: string;
   end: string;
   icon: string;
@@ -29,25 +21,28 @@ export interface Goal {
   archived: boolean;
   taskTotal: number;
   taskDone: number;
-  manualLogs: ManualLog[];
+  manualLogs: any[];
   // New: series linked via GoalSeries join table
   linkedSeriesIds: string[];
   linkedSeries: TaskSeriesSummary[];
   // Legacy
   linkedRecurringNames: string[];
 }
+type TaskStatus = 'Overdue' | 'Today' | 'Upcoming' | 'Recurring' | 'Completed';
 
 export interface Task {
   id: string;
-  title: string;   // mapped from DB `name` in AppContext
-  goalId: string;
-  due: string;
+  name: string;
+  minVersion?: string;
+  goalId?: string;
   tags: string[];
-  done: boolean;
-  source: string;
+  dueDateStr?: string;
+  due?: string;
+  status?: TaskStatus;
   isRecurring: boolean;
-  repeatFlag: string;
-  points: number;
-  minVersion: string;
-  completedMin: boolean;
+  frequency?: string;
+  streak?: number;
+  completed: boolean;
+  done?: boolean;
+  points?: number;
 }

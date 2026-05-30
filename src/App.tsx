@@ -9,6 +9,7 @@ import SettingsScreen from '@/SettingsScreen';
 import LoginScreen from '@/LoginScreen';
 import { Toaster } from 'sonner';
 import { useAppStore } from '@/shared/store/useAppStore';
+import { setAuthToken } from '@/api';
 
 function App() {
   const { user, userLoading, fetchUser } = useAppStore();
@@ -19,8 +20,7 @@ function App() {
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
     if (token) {
-      localStorage.setItem('auth_token', token);
-      // Clean the token out of the URL without pushing a history entry
+      setAuthToken(token); // writes to both _token variable and localStorage atomically
       window.history.replaceState({}, '', window.location.pathname);
     }
     fetchUser();

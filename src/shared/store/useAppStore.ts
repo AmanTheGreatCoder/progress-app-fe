@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { api } from '@/api';
+import { api, clearAuthToken } from '@/api';
 import type { Task, Goal, User } from '@/shared/types';
 
 export interface AppState {
@@ -44,7 +44,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   logout: () => {
-    localStorage.removeItem('auth_token');
+    clearAuthToken();
     set({ user: null });
   },
 

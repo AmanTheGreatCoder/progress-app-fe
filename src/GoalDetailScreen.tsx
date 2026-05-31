@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -16,6 +16,7 @@ import {
   RefreshCw,
   ChevronDown,
   ChevronRight,
+  ChevronUp,
   X,
   Search,
   Footprints,
@@ -264,19 +265,72 @@ function LinkedIndividualTaskRow({ task, onUnlink }: { task: any, onUnlink: (id:
     <div className="flex items-center justify-between px-4 py-3 bg-card active:bg-secondary transition-colors">
       <div className="flex items-center gap-3">
         <div className={`flex-shrink-0 pointer-events-none ${task.completed ? 'text-emerald-500' : 'text-muted-foreground/40'}`}>
-           {task.completed ? <CheckSquare size={16} /> : <Square size={16} />}
+          {task.completed ? <CheckSquare size={16} /> : <Square size={16} />}
         </div>
         <div>
           <h4 className={`text-[14px] font-[500] leading-snug ${task.completed ? 'line-through opacity-50' : 'text-foreground'}`}>{task.name}</h4>
           <span className="text-[12px] text-muted-foreground">{formatDate(task.date)}</span>
         </div>
       </div>
-      <button 
-        onClick={() => onUnlink(task.id)} 
+      <button
+        onClick={() => onUnlink(task.id)}
         className="w-7 h-7 flex items-center justify-center rounded-full active:bg-destructive/10 transition-colors text-muted-foreground active:text-destructive"
       >
-         <X size={14} />
+        <X size={14} />
       </button>
+    </div>
+  );
+}
+
+function GroupedLinkedTasks({ tasks, onUnlink }: { tasks: any[], onUnlink: (id: string) => void }) {
+  const groupedTasks = useMemo(() => {
+    const groups: Record<string, any[]> = {};
+    tasks.forEach(task => {
+      const key = task.name || task.title || 'Other';
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(task);
+    });
+    return groups;
+  }, [tasks]);
+
+  return (
+    <div className="flex flex-col gap-4">
+      {Object.entries(groupedTasks).map(([name, groupTasks]) => (
+        <GroupedLinkedTaskItem key={name} name={name} tasks={groupTasks} onUnlink={onUnlink} />
+      ))}
+    </div>
+  );
+}
+
+function GroupedLinkedTaskItem({ name, tasks, onUnlink }: { name: string, tasks: any[], onUnlink: (id: string) => void }) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="bg-card border border-border rounded-[16px] overflow-hidden shadow-sm">
+      <div
+        className="p-4 flex items-center justify-between cursor-pointer hover:bg-secondary/30 transition-colors active:bg-secondary/50"
+        onClick={() => setExpanded(!expanded)}
+      >
+        <div className="flex items-center gap-3 overflow-hidden">
+          <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <Check size={14} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[15px] font-[600] text-foreground truncate">{name}</p>
+            <p className="text-[13px] font-[500] text-muted-foreground mt-0.5">{tasks.length} instances linked</p>
+          </div>
+        </div>
+        <div className="text-muted-foreground">
+          {expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+        </div>
+      </div>
+      {expanded && (
+        <div className="border-t border-border divide-y divide-border bg-secondary/10">
+          {tasks.map(task => (
+            <LinkedIndividualTaskRow key={task.id} task={task} onUnlink={onUnlink} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -328,7 +382,7 @@ function AddTaskSheet({
         // Pre-select tasks that are already linked
         const initialSelected = new Set<string>();
         tasks.forEach((t: any) => {
-           if (linkedTaskIds.includes(t.id)) initialSelected.add(t.id);
+          if (linkedTaskIds.includes(t.id)) initialSelected.add(t.id);
         });
         setSelectedTaskIds(initialSelected);
       })
@@ -342,13 +396,13 @@ function AddTaskSheet({
 
   if (selectedSeries) {
     return (
-      <BottomSheet 
-        isOpen={isOpen} 
-        onClose={onClose} 
+      <BottomSheet
+        isOpen={isOpen}
+        onClose={onClose}
         title={
           <div className="flex items-center gap-2">
             <button onClick={() => setSelectedSeries(null)} className="active:bg-secondary rounded-full p-1 -ml-1 transition-colors">
-               <ArrowLeft size={20}/>
+              <ArrowLeft size={20} />
             </button>
             <span className="truncate max-w-[200px]">{selectedSeries.name}</span>
           </div>
@@ -361,7 +415,7 @@ function AddTaskSheet({
             <>
               <div className="flex justify-between items-center pb-2 border-b border-border">
                 <span className="text-[14px] font-[500]">{selectedTaskIds.size} selected</span>
-                <button 
+                <button
                   className="text-[14px] text-primary font-[600]"
                   onClick={() => {
                     if (selectedTaskIds.size === seriesTasks.length) setSelectedTaskIds(new Set());
@@ -373,40 +427,40 @@ function AddTaskSheet({
               </div>
               <div className="overflow-y-auto space-y-2 pb-4 hide-scrollbar flex-1">
                 {seriesTasks.length === 0 && (
-                   <p className="text-muted-foreground text-center py-4 text-[14px]">No instances found.</p>
+                  <p className="text-muted-foreground text-center py-4 text-[14px]">No instances found.</p>
                 )}
                 {seriesTasks.map(t => (
-                   <label key={t.id} className="flex items-center gap-3 p-3 rounded-[12px] bg-card border border-border cursor-pointer active:bg-secondary">
-                     <input 
-                       type="checkbox" 
-                       checked={selectedTaskIds.has(t.id)} 
-                       onChange={(e) => {
-                         const next = new Set(selectedTaskIds);
-                         if (e.target.checked) next.add(t.id); else next.delete(t.id);
-                         setSelectedTaskIds(next);
-                       }}
-                       className="w-4 h-4 rounded-sm border-muted text-primary focus:ring-primary"
-                     />
-                     <div className="flex-1">
-                       <p className={`text-[14px] font-[500] leading-snug ${t.completed ? 'line-through opacity-50' : 'text-foreground'}`}>{new Date(t.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</p>
-                     </div>
-                   </label>
+                  <label key={t.id} className="flex items-center gap-3 p-3 rounded-[12px] bg-card border border-border cursor-pointer active:bg-secondary">
+                    <input
+                      type="checkbox"
+                      checked={selectedTaskIds.has(t.id)}
+                      onChange={(e) => {
+                        const next = new Set(selectedTaskIds);
+                        if (e.target.checked) next.add(t.id); else next.delete(t.id);
+                        setSelectedTaskIds(next);
+                      }}
+                      className="w-4 h-4 rounded-sm border-muted text-primary focus:ring-primary"
+                    />
+                    <div className="flex-1">
+                      <p className={`text-[14px] font-[500] leading-snug ${t.completed ? 'line-through opacity-50' : 'text-foreground'}`}>{new Date(t.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                    </div>
+                  </label>
                 ))}
               </div>
               <div className="flex flex-col gap-2 pt-2 border-t border-border">
-                 <button 
-                   disabled={selectedTaskIds.size === 0}
-                   onClick={() => { onLinkTasks(Array.from(selectedTaskIds)); onClose(); }}
-                   className="w-full h-[48px] rounded-[12px] bg-primary text-primary-foreground font-[600] disabled:opacity-50"
-                 >
-                   Link {selectedTaskIds.size} Task{selectedTaskIds.size !== 1 ? 's' : ''}
-                 </button>
-                 <button 
-                   onClick={() => { onLink(selectedSeries); onClose(); }}
-                   className="w-full h-[48px] rounded-[12px] bg-secondary text-foreground font-[600]"
-                 >
-                   Link Entire Series
-                 </button>
+                <button
+                  disabled={selectedTaskIds.size === 0}
+                  onClick={() => { onLinkTasks(Array.from(selectedTaskIds)); onClose(); }}
+                  className="w-full h-[48px] rounded-[12px] bg-primary text-primary-foreground font-[600] disabled:opacity-50"
+                >
+                  Link {selectedTaskIds.size} Task{selectedTaskIds.size !== 1 ? 's' : ''}
+                </button>
+                <button
+                  onClick={() => { onLink(selectedSeries); onClose(); }}
+                  className="w-full h-[48px] rounded-[12px] bg-secondary text-foreground font-[600]"
+                >
+                  Link Entire Series
+                </button>
               </div>
             </>
           )}
@@ -488,7 +542,7 @@ export default function GoalDetailScreen() {
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [showAllSessions, setShowAllSessions] = useState(false);
+
   const [tooltipData, setTooltipData] = useState<{ date: string; x: number; y: number; info: string } | null>(null);
 
   useEffect(() => {
@@ -513,8 +567,8 @@ export default function GoalDetailScreen() {
       const ids = Array.isArray(goal.linkedTaskIds) ? goal.linkedTaskIds.join(',') : goal.linkedTaskIds;
       if (ids) {
         api.get(`/tasks/bulk?ids=${ids}`)
-           .then(res => setLinkedTasksData(res.data))
-           .catch(console.error);
+          .then(res => setLinkedTasksData(res.data))
+          .catch(console.error);
       } else {
         setLinkedTasksData([]);
       }
@@ -535,6 +589,17 @@ export default function GoalDetailScreen() {
     // Linked series already embedded in goal
     setLinkedSeries(g.linkedSeries ?? []);
   }
+
+  const taskCompletionMap = useMemo(() => {
+    const map: Record<string, { total: number; completed: number }> = {};
+    linkedTasksData.forEach(t => {
+      const dStr = (t.date || t.startDate || t.createdTime || '').split('T')[0];
+      if (!map[dStr]) map[dStr] = { total: 0, completed: 0 };
+      map[dStr].total++;
+      if (t.completed) map[dStr].completed++;
+    });
+    return map;
+  }, [linkedTasksData]);
 
   if (!goal) {
     return (
@@ -566,15 +631,12 @@ export default function GoalDetailScreen() {
     goal.deadline ?? goal.end ?? today
   );
 
-  const heatmapDays = getHeatmapDays(90);
-  const goalStartDate = goal.startDate ?? goal.start ?? today;
+
 
   const weekDays = getWeekDays();
-  const weekMaxMins = Math.max(...weekDays.map(d => sessionMap[d.dateStr] || 0), 1);
-  const weekTotalMin = weekDays.reduce((a, d) => a + (sessionMap[d.dateStr] || 0), 0);
-  const weekTotalStr = weekTotalMin >= 60
-    ? `${Math.floor(weekTotalMin / 60)}h ${weekTotalMin % 60}m`
-    : weekTotalMin > 0 ? `${weekTotalMin}m` : 'Nothing yet';
+  const weekTotalTasks = weekDays.reduce((a, d) => a + (taskCompletionMap[d.dateStr]?.total || 0), 0);
+  const weekCompletedTasks = weekDays.reduce((a, d) => a + (taskCompletionMap[d.dateStr]?.completed || 0), 0);
+  const weekTotalStr = weekTotalTasks > 0 ? `${weekCompletedTasks} / ${weekTotalTasks} completed` : 'Nothing yet';
 
   /* ── Handlers ── */
 
@@ -619,7 +681,7 @@ export default function GoalDetailScreen() {
     const newLinked = Array.from(new Set([...currentLinked, ...taskIds]));
     setGoal((g: any) => ({ ...g, linkedTaskIds: newLinked }));
     try {
-      await updateGoal(goalId!, { linkedTaskIds: newLinked.join(',') });
+      await updateGoal(goalId!, { linkedTaskIds: newLinked });
     } catch {
       setGoal((g: any) => ({ ...g, linkedTaskIds: currentLinked }));
     }
@@ -641,7 +703,7 @@ export default function GoalDetailScreen() {
     const newLinked = currentLinked.filter((id: string) => id !== taskId);
     setGoal((g: any) => ({ ...g, linkedTaskIds: newLinked }));
     try {
-      await updateGoal(goalId!, { linkedTaskIds: newLinked.join(',') });
+      await updateGoal(goalId!, { linkedTaskIds: newLinked });
     } catch {
       setGoal((g: any) => ({ ...g, linkedTaskIds: currentLinked }));
     }
@@ -667,7 +729,7 @@ export default function GoalDetailScreen() {
     <div className="app-container bg-background text-foreground h-[100dvh] w-full overflow-hidden flex flex-col">
 
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-background/90 backdrop-blur-md pt-12 pb-4 px-4 flex items-center justify-between border-b border-border">
+      <div className="sticky top-0 z-30 bg-background/90 backdrop-blur-md pt-4 pb-4 px-4 flex items-center justify-between border-b border-border">
         <button
           onClick={() => navigate(-1)}
           className="w-10 h-10 flex items-center justify-center rounded-full active:bg-secondary transition-colors"
@@ -780,65 +842,12 @@ export default function GoalDetailScreen() {
           )}
         </div>
 
-        {/* Heatmap */}
-        <div className="mb-8">
-          <h2 className="text-[18px] font-[700] tracking-[-0.4px] mb-4">Activity Heatmap</h2>
-          <div className="bg-card border border-border rounded-[16px] p-4 shadow-sm overflow-x-auto hide-scrollbar relative">
-            <div className="flex gap-1.5" style={{ width: 'max-content' }}>
-              {Array.from({ length: Math.ceil(90 / 7) }).map((_, col) => (
-                <div key={col} className="flex flex-col gap-1.5">
-                  {Array.from({ length: 7 }).map((_, row) => {
-                    const idx = col * 7 + row;
-                    if (idx >= 90) return null;
-                    const d = heatmapDays[idx];
-                    const mins = sessionMap[d] || 0;
-                    const beforeStart = d < goalStartDate;
-                    const isToday = d === today;
-
-                    let bg = 'bg-secondary/50';
-                    if (beforeStart) bg = 'bg-transparent';
-                    else if (mins > 40) bg = 'bg-emerald-600';
-                    else if (mins > 20) bg = 'bg-emerald-500';
-                    else if (mins > 0) bg = 'bg-emerald-300 dark:bg-emerald-700';
-
-                    return (
-                      <div
-                        key={d}
-                        onClick={e => {
-                          e.stopPropagation();
-                          if (beforeStart) return;
-                          const r = e.currentTarget.getBoundingClientRect();
-                          setTooltipData({
-                            date: d, x: r.left + r.width / 2, y: r.top,
-                            info: mins > 0 ? `${mins} min logged` : 'No activity',
-                          });
-                        }}
-                        className={`w-3.5 h-3.5 rounded-[3px] transition-transform active:scale-125 ${bg} ${isToday ? 'ring-1 ring-foreground ring-offset-0' : ''}`}
-                      />
-                    );
-                  })}
-                </div>
-              ))}
-            </div>
-            {tooltipData && (
-              <div
-                className="fixed z-50 bg-foreground text-background px-3 py-1.5 rounded-[8px] text-[12px] font-[500] whitespace-nowrap shadow-lg pointer-events-none -translate-x-1/2 -translate-y-full -mt-2"
-                style={{ left: tooltipData.x, top: tooltipData.y }}
-              >
-                <div className="font-[700] mb-0.5">{formatDate(tooltipData.date)}</div>
-                <div className="opacity-80">{tooltipData.info}</div>
-                <div className="absolute w-2 h-2 bg-foreground rotate-45 left-1/2 -ml-1 -bottom-1" />
-              </div>
-            )}
-          </div>
-        </div>
-
         {/* Log button */}
         <button
           onClick={() => setIsLogSheetOpen(true)}
           className={`w-full py-4 rounded-[12px] flex items-center justify-center gap-2 text-[16px] font-[600] shadow-sm transition-all active:scale-[0.98] mb-10 ${hasLoggedToday
-              ? 'bg-secondary text-foreground border border-border'
-              : 'bg-primary text-primary-foreground'
+            ? 'bg-secondary text-foreground border border-border'
+            : 'bg-primary text-primary-foreground'
             }`}
         >
           {hasLoggedToday
@@ -851,22 +860,23 @@ export default function GoalDetailScreen() {
         <div className="mb-10">
           <div className="flex justify-between items-end mb-6">
             <h2 className="text-[18px] font-[700] tracking-[-0.4px]">This Week</h2>
-            <span className={`text-[14px] font-[600] ${weekTotalMin > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}`}>
+            <span className={`text-[14px] font-[600] ${weekTotalTasks > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}`}>
               {weekTotalStr}
             </span>
           </div>
           <div className="h-28 flex items-end justify-between gap-2 px-1">
             {weekDays.map(({ label, dateStr }) => {
-              const mins = sessionMap[dateStr] || 0;
-              const heightPct = (mins / weekMaxMins) * 100;
+              const dayTasks = taskCompletionMap[dateStr];
+              const total = dayTasks?.total || 0;
+              const completed = dayTasks?.completed || 0;
+              const heightPct = total > 0 ? (completed / total) * 100 : 0;
               const isToday = dateStr === today;
               return (
                 <div key={dateStr} className="flex flex-col items-center flex-1 gap-2">
-                  <div className="w-full bg-secondary rounded-t-[4px] flex items-end" style={{ height: 80 }}>
+                  <div className="w-full bg-secondary rounded-t-[4px] flex items-end overflow-hidden" style={{ height: 80 }}>
                     <div
-                      className={`w-full rounded-t-[4px] transition-all duration-700 ${isToday ? 'bg-emerald-500' : 'bg-emerald-400/60 dark:bg-emerald-500/40'
-                        }`}
-                      style={{ height: mins > 0 ? `${Math.max(heightPct, 6)}%` : '0%' }}
+                      className={`w-full transition-all duration-700 ${isToday ? 'bg-emerald-500' : 'bg-emerald-400/60 dark:bg-emerald-500/40'}`}
+                      style={{ height: total > 0 ? `${Math.max(heightPct, 6)}%` : '0%' }}
                     />
                   </div>
                   <span className={`text-[11px] font-[${isToday ? '700' : '500'}] ${isToday ? 'text-foreground' : 'text-muted-foreground'}`}>
@@ -878,37 +888,7 @@ export default function GoalDetailScreen() {
           </div>
         </div>
 
-        {/* Session History */}
-        <div className="mb-10">
-          <h2 className="text-[18px] font-[700] tracking-[-0.4px] mb-4">Session History</h2>
-          {sessions.length === 0 ? (
-            <div className="bg-card border border-border rounded-[16px] p-6 text-center shadow-sm">
-              <p className="text-[14px] text-muted-foreground">No sessions logged yet.</p>
-            </div>
-          ) : (
-            <div className="bg-card border border-border rounded-[16px] overflow-hidden shadow-sm">
-              {(showAllSessions ? sessions : sessions.slice(0, 5)).map((s, i) => (
-                <div key={s.id} className={`p-4 flex items-center justify-between ${i !== 0 ? 'border-t border-border' : ''}`}>
-                  <div>
-                    <div className="text-[14px] font-[600] mb-0.5">{formatDate(s.date)}</div>
-                    {s.note && <div className="text-[13px] text-muted-foreground">{s.note}</div>}
-                  </div>
-                  <span className="text-[14px] font-[700] text-emerald-600 dark:text-emerald-400">
-                    {s.duration} min
-                  </span>
-                </div>
-              ))}
-              {sessions.length > 5 && (
-                <button
-                  onClick={() => setShowAllSessions(v => !v)}
-                  className="w-full p-3 text-center text-[13px] font-[600] text-muted-foreground bg-secondary/50 active:bg-secondary transition-colors border-t border-border"
-                >
-                  {showAllSessions ? 'Show less' : `Show all ${sessions.length} sessions`}
-                </button>
-              )}
-            </div>
-          )}
-        </div>
+
 
         {/* Linked Tasks */}
         <div className="mb-6">
@@ -945,11 +925,7 @@ export default function GoalDetailScreen() {
               {linkedTasksData.length > 0 && (
                 <div>
                   <h3 className="text-[14px] font-[600] text-muted-foreground mb-2 px-1">Specific Instances</h3>
-                  <div className="bg-card border border-border rounded-[16px] overflow-hidden shadow-sm divide-y divide-border">
-                    {linkedTasksData.map(task => (
-                      <LinkedIndividualTaskRow key={task.id} task={task} onUnlink={handleUnlinkTask} />
-                    ))}
-                  </div>
+                  <GroupedLinkedTasks tasks={linkedTasksData} onUnlink={handleUnlinkTask} />
                 </div>
               )}
             </div>
@@ -1027,8 +1003,8 @@ function LogSessionSheet({ isOpen, goalName, onClose, onSubmit }: any) {
                 key={m}
                 onClick={() => setDuration(m)}
                 className={`flex-shrink-0 px-4 py-1.5 rounded-full text-[14px] font-[600] border transition-colors ${duration === m
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'bg-card text-muted-foreground border-border'
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-card text-muted-foreground border-border'
                   }`}
               >
                 {m}m
@@ -1197,8 +1173,8 @@ function EditGoalSheet({
                 key={key}
                 onClick={() => setIconName(key)}
                 className={`aspect-square rounded-[12px] flex items-center justify-center border transition-all ${iconName === key
-                    ? 'bg-primary text-primary-foreground border-primary scale-110 shadow-sm'
-                    : 'bg-card text-muted-foreground border-border active:bg-secondary'
+                  ? 'bg-primary text-primary-foreground border-primary scale-110 shadow-sm'
+                  : 'bg-card text-muted-foreground border-border active:bg-secondary'
                   }`}
               >
                 <Icon size={18} />

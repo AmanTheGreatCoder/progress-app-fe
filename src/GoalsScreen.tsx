@@ -247,13 +247,11 @@ function GoalCard({ goal, onLongPress, onClick }: { goal: any, onLongPress: () =
   const category = goal.category || 'General';
   const priority = goal.priority || 'Medium';
 
-  // Use task-completion progress when linked series exist, otherwise fall back to time-based
-  const hasLinkedTasks = (goal.linkedSeries?.length ?? 0) > 0 || (goal.linkedRecurringNames?.length ?? 0) > 0;
+  // Use true task/log progress for the progress bar instead of time-based deadline progress
+  const hasLinkedTasks = (goal.linkedSeries?.length ?? 0) > 0 || (goal.linkedRecurringNames?.length ?? 0) > 0 || (goal.linkedTaskIds && goal.linkedTaskIds.length > 0);
   const taskDone: number = goal.done ?? 0;
   const taskTotal: number = goal.total ?? 0;
-  const progressPercent: number = hasLinkedTasks
-    ? (goal.pct ?? 0)
-    : Math.max(0, Math.min(100, ((now - new Date(goal.start).getTime()) / ((end - new Date(goal.start).getTime()) || 1)) * 100));
+  const progressPercent: number = goal.pct ?? 0;
 
   return (
     <div
@@ -299,8 +297,8 @@ function GoalCard({ goal, onLongPress, onClick }: { goal: any, onLongPress: () =
         <div className="flex justify-between items-center mb-1.5">
           <span className="text-[12px] font-[700] text-foreground">
             {hasLinkedTasks
-              ? `${taskDone} / ${taskTotal} days`
-              : `${Math.round(progressPercent)}% complete`}
+              ? `${taskDone} / ${taskTotal} completed`
+              : `${taskDone} / ${taskTotal} logged`}
           </span>
           <span className={`text-[12px] font-[700] ${remainingMs < (7 * 24 * 60 * 60 * 1000) && remainingMs > 0 ? 'text-orange-500' : 'text-muted-foreground'}`}>
             {remainingText}

@@ -95,17 +95,6 @@ function computeProgress(startDate: string, deadline: string) {
   return { pct: Math.round(pct), daysLeft };
 }
 
-function getHeatmapDays(count = 90) {
-  const days: string[] = [];
-  const today = new Date();
-  for (let i = count - 1; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    days.push(toLocalDateString(d));
-  }
-  return days;
-}
-
 function getWeekDays() {
   // Returns Mon–Sun of the current week
   const today = new Date();
@@ -543,8 +532,6 @@ export default function GoalDetailScreen() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const [tooltipData, setTooltipData] = useState<{ date: string; x: number; y: number; info: string } | null>(null);
-
   useEffect(() => {
     if (!goalId) return;
 
@@ -760,7 +747,7 @@ export default function GoalDetailScreen() {
       {/* Scrollable body */}
       <div
         className="scroll-area flex-1 overflow-y-auto overflow-x-hidden px-4 pt-6 pb-10"
-        onClick={() => setTooltipData(null)}
+      // onClick={() => setTooltipData(null)}
       >
 
         {/* Hero */}

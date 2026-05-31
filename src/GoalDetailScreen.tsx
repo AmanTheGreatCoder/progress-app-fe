@@ -257,22 +257,60 @@ function RecurringSeriesRow({
   );
 }
 
+/* ─── LinkedIndividualTaskRow ───────────────────────────── */
+
+function LinkedIndividualTaskRow({ task, onUnlink }: { task: any, onUnlink: (id: string) => void }) {
+  return (
+    <div className="flex items-center justify-between px-4 py-3 bg-card active:bg-secondary transition-colors">
+      <div className="flex items-center gap-3">
+        <div className={`flex-shrink-0 pointer-events-none ${task.completed ? 'text-emerald-500' : 'text-muted-foreground/40'}`}>
+           {task.completed ? <CheckSquare size={16} /> : <Square size={16} />}
+        </div>
+        <div>
+          <h4 className={`text-[14px] font-[500] leading-snug ${task.completed ? 'line-through opacity-50' : 'text-foreground'}`}>{task.name}</h4>
+          <span className="text-[12px] text-muted-foreground">{formatDate(task.date)}</span>
+        </div>
+      </div>
+      <button 
+        onClick={() => onUnlink(task.id)} 
+        className="w-7 h-7 flex items-center justify-center rounded-full active:bg-destructive/10 transition-colors text-muted-foreground active:text-destructive"
+      >
+         <X size={14} />
+      </button>
+    </div>
+  );
+}
+
 /* ─── AddTaskSheet ──────────────────────────────────────── */
 
 function AddTaskSheet({
-  isOpen, onClose, linkedSeriesIds, onLink,
+  isOpen, onClose, linkedSeriesIds, linkedTaskIds, onLink, onLinkTasks
 }: {
   isOpen: boolean;
   onClose: () => void;
   linkedSeriesIds: string[];
+  linkedTaskIds: string[];
   onLink: (series: SeriesSummary) => void;
+  onLinkTasks: (taskIds: string[]) => void;
 }) {
   const [allSeries, setAllSeries] = useState<SeriesSummary[]>([]);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Task selection state
+  const [selectedSeries, setSelectedSeries] = useState<SeriesSummary | null>(null);
+  const [seriesTasks, setSeriesTasks] = useState<any[]>([]);
+  const [loadingTasks, setLoadingTasks] = useState(false);
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
+
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      setSelectedSeries(null);
+      setSeriesTasks([]);
+      setSelectedTaskIds(new Set());
+      setQuery('');
+      return;
+    }
     setLoading(true);
     api.get('/tasks/series')
       .then(res => setAllSeries(res.data ?? []))
@@ -280,14 +318,106 @@ function AddTaskSheet({
       .finally(() => setLoading(false));
   }, [isOpen]);
 
+  const handleSelectSeries = (series: SeriesSummary) => {
+    setSelectedSeries(series);
+    setLoadingTasks(true);
+    api.get('/tasks', { params: { name: series.name, from: '1970-01-01', to: '2099-12-31' } })
+      .then(res => {
+        const tasks = res.data ?? [];
+        setSeriesTasks(tasks);
+        // Pre-select tasks that are already linked
+        const initialSelected = new Set<string>();
+        tasks.forEach((t: any) => {
+           if (linkedTaskIds.includes(t.id)) initialSelected.add(t.id);
+        });
+        setSelectedTaskIds(initialSelected);
+      })
+      .finally(() => setLoadingTasks(false));
+  };
+
   const available = allSeries.filter(s =>
     !linkedSeriesIds.includes(s.id) &&
     s.name.toLowerCase().includes(query.toLowerCase())
   );
 
+  if (selectedSeries) {
+    return (
+      <BottomSheet 
+        isOpen={isOpen} 
+        onClose={onClose} 
+        title={
+          <div className="flex items-center gap-2">
+            <button onClick={() => setSelectedSeries(null)} className="active:bg-secondary rounded-full p-1 -ml-1 transition-colors">
+               <ArrowLeft size={20}/>
+            </button>
+            <span className="truncate max-w-[200px]">{selectedSeries.name}</span>
+          </div>
+        }
+      >
+        <div className="flex flex-col space-y-4 max-h-[60vh]">
+          {loadingTasks ? (
+            <p className="text-muted-foreground text-center py-4 text-[14px]">Loading occurrences...</p>
+          ) : (
+            <>
+              <div className="flex justify-between items-center pb-2 border-b border-border">
+                <span className="text-[14px] font-[500]">{selectedTaskIds.size} selected</span>
+                <button 
+                  className="text-[14px] text-primary font-[600]"
+                  onClick={() => {
+                    if (selectedTaskIds.size === seriesTasks.length) setSelectedTaskIds(new Set());
+                    else setSelectedTaskIds(new Set(seriesTasks.map(t => t.id)));
+                  }}
+                >
+                  {selectedTaskIds.size === seriesTasks.length ? 'Deselect All' : 'Select All'}
+                </button>
+              </div>
+              <div className="overflow-y-auto space-y-2 pb-4 hide-scrollbar flex-1">
+                {seriesTasks.length === 0 && (
+                   <p className="text-muted-foreground text-center py-4 text-[14px]">No instances found.</p>
+                )}
+                {seriesTasks.map(t => (
+                   <label key={t.id} className="flex items-center gap-3 p-3 rounded-[12px] bg-card border border-border cursor-pointer active:bg-secondary">
+                     <input 
+                       type="checkbox" 
+                       checked={selectedTaskIds.has(t.id)} 
+                       onChange={(e) => {
+                         const next = new Set(selectedTaskIds);
+                         if (e.target.checked) next.add(t.id); else next.delete(t.id);
+                         setSelectedTaskIds(next);
+                       }}
+                       className="w-4 h-4 rounded-sm border-muted text-primary focus:ring-primary"
+                     />
+                     <div className="flex-1">
+                       <p className={`text-[14px] font-[500] leading-snug ${t.completed ? 'line-through opacity-50' : 'text-foreground'}`}>{new Date(t.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                     </div>
+                   </label>
+                ))}
+              </div>
+              <div className="flex flex-col gap-2 pt-2 border-t border-border">
+                 <button 
+                   disabled={selectedTaskIds.size === 0}
+                   onClick={() => { onLinkTasks(Array.from(selectedTaskIds)); onClose(); }}
+                   className="w-full h-[48px] rounded-[12px] bg-primary text-primary-foreground font-[600] disabled:opacity-50"
+                 >
+                   Link {selectedTaskIds.size} Task{selectedTaskIds.size !== 1 ? 's' : ''}
+                 </button>
+                 <button 
+                   onClick={() => { onLink(selectedSeries); onClose(); }}
+                   className="w-full h-[48px] rounded-[12px] bg-secondary text-foreground font-[600]"
+                 >
+                   Link Entire Series
+                 </button>
+              </div>
+            </>
+          )}
+        </div>
+      </BottomSheet>
+    );
+  }
+
   return (
     <BottomSheet isOpen={isOpen} onClose={onClose} title="Link Recurring Task">
-      <div className="space-y-4">
+      <div className="space-y-4 max-h-[60vh] flex flex-col">
         {/* Search */}
         <div className="flex items-center gap-2 bg-secondary rounded-[12px] px-3">
           <Search size={16} className="text-muted-foreground flex-shrink-0" />
@@ -316,11 +446,11 @@ function AddTaskSheet({
           </p>
         )}
 
-        <div className="space-y-2">
+        <div className="space-y-2 overflow-y-auto hide-scrollbar pb-6 flex-1">
           {available.map(series => (
             <button
               key={series.id}
-              onClick={() => { onLink(series); onClose(); }}
+              onClick={() => handleSelectSeries(series)}
               className="w-full flex items-center gap-3 p-3.5 rounded-[12px] bg-card border border-border active:bg-secondary transition-colors text-left"
             >
               <RefreshCw size={16} className="text-indigo-500 flex-shrink-0" />
@@ -333,7 +463,7 @@ function AddTaskSheet({
                   ))}
                 </div>
               </div>
-              <Plus size={16} className="text-muted-foreground flex-shrink-0" />
+              <ChevronRight size={16} className="text-muted-foreground flex-shrink-0" />
             </button>
           ))}
         </div>
@@ -352,6 +482,7 @@ export default function GoalDetailScreen() {
   const [goal, setGoal] = useState<any>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [linkedSeries, setLinkedSeries] = useState<SeriesSummary[]>([]);
+  const [linkedTasksData, setLinkedTasksData] = useState<any[]>([]);
 
   const [isLogSheetOpen, setIsLogSheetOpen] = useState(false);
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
@@ -375,6 +506,22 @@ export default function GoalDetailScreen() {
       applyGoal(rawGoal);
     }
   }, [goalId, goals]);
+
+  useEffect(() => {
+    if (goal?.linkedTaskIds && goal.linkedTaskIds.length > 0) {
+      // It's an array now because serializeGoal returns it as an array
+      const ids = Array.isArray(goal.linkedTaskIds) ? goal.linkedTaskIds.join(',') : goal.linkedTaskIds;
+      if (ids) {
+        api.get(`/tasks/bulk?ids=${ids}`)
+           .then(res => setLinkedTasksData(res.data))
+           .catch(console.error);
+      } else {
+        setLinkedTasksData([]);
+      }
+    } else {
+      setLinkedTasksData([]);
+    }
+  }, [goal?.linkedTaskIds]);
 
   function applyGoal(g: any) {
     setGoal(g);
@@ -467,6 +614,17 @@ export default function GoalDetailScreen() {
     }
   };
 
+  const handleLinkTasks = async (taskIds: string[]) => {
+    const currentLinked = Array.isArray(goal.linkedTaskIds) ? goal.linkedTaskIds : (goal.linkedTaskIds ? goal.linkedTaskIds.split(',') : []);
+    const newLinked = Array.from(new Set([...currentLinked, ...taskIds]));
+    setGoal((g: any) => ({ ...g, linkedTaskIds: newLinked }));
+    try {
+      await updateGoal(goalId!, { linkedTaskIds: newLinked.join(',') });
+    } catch {
+      setGoal((g: any) => ({ ...g, linkedTaskIds: currentLinked }));
+    }
+  };
+
   const handleUnlinkSeries = async (seriesId: string) => {
     const prev = [...linkedSeries];
     const newIds = linkedSeries.filter(s => s.id !== seriesId).map(s => s.id);
@@ -475,6 +633,17 @@ export default function GoalDetailScreen() {
       await updateGoal(goalId!, { linkedSeriesIds: newIds });
     } catch {
       setLinkedSeries(prev);
+    }
+  };
+
+  const handleUnlinkTask = async (taskId: string) => {
+    const currentLinked = Array.isArray(goal.linkedTaskIds) ? goal.linkedTaskIds : (goal.linkedTaskIds ? goal.linkedTaskIds.split(',') : []);
+    const newLinked = currentLinked.filter((id: string) => id !== taskId);
+    setGoal((g: any) => ({ ...g, linkedTaskIds: newLinked }));
+    try {
+      await updateGoal(goalId!, { linkedTaskIds: newLinked.join(',') });
+    } catch {
+      setGoal((g: any) => ({ ...g, linkedTaskIds: currentLinked }));
     }
   };
 
@@ -563,13 +732,13 @@ export default function GoalDetailScreen() {
 
         {/* Progress */}
         <div className="mb-10">
-          {linkedSeries.length > 0 ? (
+          {(linkedSeries.length > 0 || linkedTasksData.length > 0) ? (
             /* Task-completion progress when linked series are set */
             <>
               <div className="flex justify-between items-end mb-2">
                 <span className="text-[14px] font-[600]">Task Progress</span>
                 <span className="text-[12px] font-[600] text-muted-foreground">
-                  {goal.done ?? 0} / {goal.total ?? 0} days
+                  {goal.done ?? 0} / {goal.total ?? 0}
                 </span>
               </div>
               <div className="w-full h-2.5 bg-secondary rounded-full overflow-hidden mb-2">
@@ -753,22 +922,36 @@ export default function GoalDetailScreen() {
             </button>
           </div>
 
-          {linkedSeries.length === 0 ? (
+          {(linkedSeries.length === 0 && linkedTasksData.length === 0) ? (
             <div className="bg-card border border-border rounded-[16px] p-6 text-center shadow-sm">
               <p className="text-[14px] text-muted-foreground mb-1">No tasks linked yet.</p>
-              <p className="text-[12px] text-muted-foreground">Tap + Add to link a recurring task series.</p>
+              <p className="text-[12px] text-muted-foreground">Tap + Add to link a recurring task series or specific tasks.</p>
             </div>
           ) : (
-            <div className="bg-card border border-border rounded-[16px] overflow-hidden shadow-sm divide-y divide-border">
-              {linkedSeries.map(series => (
-                <RecurringSeriesRow
-                  key={series.id}
-                  series={series}
-                  onUnlink={handleUnlinkSeries}
-                  goalStartDate={goal.startDate ?? goal.start ?? today}
-                  goalEndDate={goal.deadline ?? goal.end ?? today}
-                />
-              ))}
+            <div className="flex flex-col gap-4">
+              {linkedSeries.length > 0 && (
+                <div className="bg-card border border-border rounded-[16px] overflow-hidden shadow-sm divide-y divide-border">
+                  {linkedSeries.map(series => (
+                    <RecurringSeriesRow
+                      key={series.id}
+                      series={series}
+                      onUnlink={handleUnlinkSeries}
+                      goalStartDate={goal.startDate ?? goal.start ?? today}
+                      goalEndDate={goal.deadline ?? goal.end ?? today}
+                    />
+                  ))}
+                </div>
+              )}
+              {linkedTasksData.length > 0 && (
+                <div>
+                  <h3 className="text-[14px] font-[600] text-muted-foreground mb-2 px-1">Specific Instances</h3>
+                  <div className="bg-card border border-border rounded-[16px] overflow-hidden shadow-sm divide-y divide-border">
+                    {linkedTasksData.map(task => (
+                      <LinkedIndividualTaskRow key={task.id} task={task} onUnlink={handleUnlinkTask} />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -788,7 +971,9 @@ export default function GoalDetailScreen() {
         isOpen={isAddTaskOpen}
         onClose={() => setIsAddTaskOpen(false)}
         linkedSeriesIds={linkedSeries.map(s => s.id)}
+        linkedTaskIds={Array.isArray(goal.linkedTaskIds) ? goal.linkedTaskIds : (goal.linkedTaskIds ? goal.linkedTaskIds.split(',') : [])}
         onLink={handleLinkSeries}
+        onLinkTasks={handleLinkTasks}
       />
 
       {/* Edit Goal Sheet */}

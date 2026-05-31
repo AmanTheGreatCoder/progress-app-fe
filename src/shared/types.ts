@@ -34,7 +34,8 @@ export interface Goal {
   // New: series linked via GoalSeries join table
   linkedSeriesIds: string[];
   linkedSeries: TaskSeriesSummary[];
-  // Legacy
+  // Legacy or Individual Task IDs
+  linkedTaskIds?: string[] | string;
   linkedRecurringNames: string[];
   // Backend-computed progress fields
   done?: number;
@@ -51,6 +52,7 @@ export interface Task {
   tags: string[];
   dueDateStr?: string;
   due?: string;
+  date: string;
   status?: TaskStatus;
   isRecurring: boolean;
   frequency?: string;

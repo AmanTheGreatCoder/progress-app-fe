@@ -32,10 +32,12 @@ export default function TasksScreen() {
     return true;
   });
 
-  const overdue = displayedTasks.filter(t => !t.completed && t.status === 'Overdue');
-  const today = displayedTasks.filter(t => !t.completed && t.status === 'Today');
-  const upcoming = displayedTasks.filter(t => !t.completed && t.status === 'Upcoming');
-  const recurring = displayedTasks.filter(t => !t.completed && t.status === 'Recurring');
+  const todayDateStr = new Date().toISOString().split('T')[0];
+  
+  const overdue = displayedTasks.filter(t => !t.completed && t.date < todayDateStr && !t.isRecurring);
+  const today = displayedTasks.filter(t => !t.completed && t.date >= todayDateStr && !t.isRecurring);
+  const upcoming = displayedTasks.filter(() => false); // We currently only fetch one date
+  const recurring = displayedTasks.filter(t => !t.completed && t.isRecurring);
   const completed = displayedTasks.filter(t => t.completed);
 
   return (

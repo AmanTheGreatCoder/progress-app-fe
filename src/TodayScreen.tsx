@@ -5,6 +5,7 @@ import { BottomNav } from '@/shared/components/layout/BottomNav';
 import { BottomSheet } from '@/shared/components/ui/BottomSheet';
 import { TaskRow } from '@/shared/components/ui/TaskRow';
 import { Skeleton } from '@/shared/components/ui/Skeleton';
+import { toLocalDateString } from '@/shared/dateUtils';
 
 export default function TodayScreen() {
   const { tasks, goals, points, targetPoints, fetchTasks, fetchGoals, fetchDashboard, toggleTaskCompletion } = useAppStore();
@@ -14,7 +15,7 @@ export default function TodayScreen() {
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([fetchTasks('today'), fetchGoals(), fetchDashboard()]).finally(() => setLoading(false));
+    Promise.all([fetchTasks(toLocalDateString()), fetchGoals(), fetchDashboard()]).finally(() => setLoading(false));
   }, [fetchTasks, fetchGoals, fetchDashboard]);
 
   const incompleteTasks = tasks.filter(t => !t.completed);
